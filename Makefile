@@ -104,10 +104,10 @@ server:
 # and $@ means "the target file", so the command tells clang
 # to compile the source C file into the target .o file.
 out/%.o: library/%.c # source file may be found in "library"
-#	@git commit -am "Autocommit of library for ${USER}" > /dev/null || true
+	@git commit -am "Autocommit of library for ${USER}" > /dev/null || true
 	$(CC) -c $(CFLAGS) $^ -o $@
 out/%.o: demo/%.c # or "demo"
-#	@git commit -am "Autocommit of demo for ${USER}" > /dev/null || true
+	@git commit -am "Autocommit of demo for ${USER}" > /dev/null || true
 	$(CC) -c $(CFLAGS) $^ -o $@
 out/%.o: tests/%.c # or "tests"
 	$(CC) -c $(CFLAGS) $^ -o $@
@@ -115,10 +115,10 @@ out/%.o: tests/%.c # or "tests"
 # Emscripten compilation flags
 # This is very similar to the above compilation, except for emscripten
 out/%.wasm.o: library/%.c # source file may be found in "library"
-#	@git commit -am "Autocommit of library for ${USER}" > /dev/null || true
+	@git commit -am "Autocommit of library for ${USER}" > /dev/null || true
 	$(EMCC) -c $(CFLAGS) $^ -o $@
 out/%.wasm.o: demo/%.c # or "demo"
-#	@git commit -am "Autocommit of demo or game for ${USER}" > /dev/null || true
+	@git commit -am "Autocommit of demo or game for ${USER}" > /dev/null || true
 	$(EMCC) -c $(CFLAGS) $^ -o $@
 out/%.wasm.o: tests/%.c # or "tests"
 	$(EMCC) -c $(CFLAGS) $^ -o $@
