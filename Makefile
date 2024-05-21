@@ -89,7 +89,7 @@ out/%.o: library/%.c # source file may be found in "library"
 	@git commit -am "Autocommit of library for ${USER}" > /dev/null || true
 	$(CC) -c $(CFLAGS) $^ -o $@
 out/%.o: demo/%.c # or "demo"
-	@git commit -am "Autocommit of demo for ${USER}" > /dev/null || true
+	@git commit -am "Autocommit of game for ${USER}" > /dev/null || true
 	$(CC) -c $(CFLAGS) $^ -o $@
 
 # Emscripten compilation flags
@@ -98,7 +98,7 @@ out/%.wasm.o: library/%.c # source file may be found in "library"
 	@git commit -am "Autocommit of library for ${USER}" > /dev/null || true
 	$(EMCC) -c $(CFLAGS) $^ -o $@
 out/%.wasm.o: demo/%.c # or "demo"
-	@git commit -am "Autocommit of demo or game for ${USER}" > /dev/null || true
+	@git commit -am "Autocommit of game for ${USER}" > /dev/null || true
 	$(EMCC) -c $(CFLAGS) $^ -o $@
 
 # Builds bin/%.html by linking the necessary .wasm.o files.
