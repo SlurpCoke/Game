@@ -21,7 +21,7 @@ typedef struct asset asset_t;
  * @param bounding_box the bounding box containing the location and dimensions
  * of the text when it is rendered
  */
-void *asset_make_image(const char *filepath, SDL_Rect bounding_box);
+void asset_make_image(const char *filepath, SDL_Rect bounding_box);
 
 /**
  * Allocates memory for an image asset with an attached body and adds it
@@ -31,7 +31,7 @@ void *asset_make_image(const char *filepath, SDL_Rect bounding_box);
  * @param filepath the filepath to the image file
  * @param body the body to render the image on top of
  */
-void *asset_make_image_with_body(const char *filepath, body_t *body);
+void asset_make_image_with_body(const char *filepath, body_t *body);
 
 /**
  * Allocates memory for a text asset with the given parameters and adds it
@@ -43,7 +43,7 @@ void *asset_make_image_with_body(const char *filepath, body_t *body);
  * @param text the text to render
  * @param color the color of the text
  */
-void *asset_make_text(const char *filepath, SDL_Rect bounding_box,
+void asset_make_text(const char *filepath, SDL_Rect bounding_box,
                       const char *text, color_t color);
 
 /**

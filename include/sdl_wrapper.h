@@ -99,19 +99,6 @@ SDL_Rect *sdl_get_rect(double x, double y, double w, double h);
 void sdl_render_image(SDL_Texture *image_texture, SDL_Rect *rect);
 
 /**
- * Renders text to the screen using the specified font, text, bounding box, and
- * color.
- *
- * @param font the TTF_Font to use for rendering the text
- * @param text the string of text to render
- * @param bounding_box the SDL_Rect defining the position and size of the
- * rendered text
- * @param color the color to render the text with
- */
-void sdl_render_text(TTF_Font *font, const char *text, SDL_Rect *bounding_box,
-                     color_t color);
-
-/**
  * Displays the rendered frame on the SDL window.
  * Must be called after drawing the bodies in order to show them.
  */
