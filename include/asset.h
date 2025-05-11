@@ -44,7 +44,7 @@ void asset_make_image_with_body(const char *filepath, body_t *body);
  * @param color the color of the text
  */
 void asset_make_text(const char *filepath, SDL_Rect bounding_box,
-                      const char *text, color_t color);
+                     const char *text, color_t color);
 
 /**
  * Resets the internal asset list by freeing all assets and creating a new empty
