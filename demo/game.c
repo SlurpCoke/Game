@@ -42,8 +42,8 @@ const vector_t OBS_SPACING = {120, 350};
 
 const size_t SHIP_NUM_POINTS = 20;
 
-const rgb_color_t obs_color = (rgb_color_t){0.2, 0.2, 0.3};
-const rgb_color_t frog_color = (rgb_color_t){0.1, 0.9, 0.2};
+const color_t obs_color = (color_t){0.2, 0.2, 0.3};
+const color_t frog_color = (color_t){0.1, 0.9, 0.2};
 
 // constants to create invaders
 const int16_t H_STEP = 20;
@@ -60,7 +60,6 @@ const char *LOG_PATH = "assets/log.png";
 const char *BACKGROUND_PATH = "assets/frogger-background.png";
 
 struct state {
-  list_t *body_assets;
   asset_t *frog;
   scene_t *scene;
   int16_t points;
@@ -168,16 +167,15 @@ state_t *emscripten_init() {
   state->points = 0;
   srand(time(NULL));
   state->scene = scene_init();
-  state->body_assets = list_init(2, (free_func_t)asset_destroy);
 
   body_t *froggy = make_frog(OUTER_RADIUS, INNER_RADIUS, VEC_ZERO);
   body_set_centroid(froggy, RESET_POS);
 
   scene_add_body(state->scene, froggy);
 
-  // TODO (task 2c): make and save the asset for the background image
+  // TODO (task 4c): make the asset for the background image
 
-  // TODO (task 2a): make and save the asset for the frog image
+  // TODO (task 4a): make the asset for the frog image
 
   for (size_t r = 3; r < ROWS + 3; r++) {
     double cx = 0;
@@ -200,9 +198,9 @@ state_t *emscripten_init() {
       scene_add_body(state->scene, obstacle);
 
       create_collision(state->scene, froggy, obstacle, reset_user_handler, NULL,
-                       0);
+                       0, NULL);
 
-      // TODO (task 2a): make and save the asset for the log image
+      // TODO (task 4a): make the asset for the log image
     }
   }
   sdl_on_key((key_handler_t)on_key);
@@ -216,18 +214,18 @@ bool emscripten_main(state_t *state) {
     wrap_edges(scene_get_body(state->scene, i));
   }
   sdl_clear();
-  sdl_render_scene(state->scene, NULL);
-  for (size_t i = 0; i < list_size(state->body_assets); i++) {
-    asset_render(list_get(state->body_assets, i));
+  sdl_render_scene(state->scene);
+  list_t *body_assets = asset_get_asset_list();
+  for (size_t i = 0; i < list_size(body_assets); i++) {
+    asset_render(list_get(body_assets, i));
   }
   sdl_show();
-
   scene_tick(state->scene, dt);
   return false;
 }
 
 void emscripten_free(state_t *state) {
-  list_free(state->body_assets);
+  list_free(asset_get_asset_list());
   scene_free(state->scene);
   asset_cache_destroy();
   free(state);

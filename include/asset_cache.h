@@ -28,7 +28,7 @@ void asset_cache_destroy();
  * SDL_Texture *obj = asset_cache_obj_get_or_create(ASSET_IMAGE, img_path);
  *
  * char *font_path = "assets/font.ttf";
- * TTF_Font *obj = asset_cache_obj_get_or_create(ASSET_FONT, font_path);
+ * TTF_Font *obj = asset_cache_obj_get_or_create(ASSET_TEXT, font_path);
  * ```
  *
  * @param ty the type of the asset
@@ -36,25 +36,5 @@ void asset_cache_destroy();
  * @return the object that corresponds to the filepath, as a void*
  */
 void *asset_cache_obj_get_or_create(asset_type_t ty, const char *filepath);
-
-/**
- * Registers the button to the asset cache, effectively activating its button
- * handler. When this function is called, the asset_cache takes ownership of the
- * button so the caller does NOT have to free it.
- *
- * Asserts that the type of `button` is ASSET_BUTTON.
- *
- * @param button pointer to the button asset
- */
-void asset_cache_register_button(asset_t *button);
-
-/**
- * Runs `asset_on_button_click` on all the buttons stored in the asset cache.
- *
- * @param state the game state
- * @param x the x position of the mouse click
- * @param y the y position of the mouse click
- */
-void asset_cache_handle_buttons(state_t *state, double x, double y);
 
 #endif // #ifndef __ASSET_CACHE_H__

@@ -6,12 +6,12 @@
 
 /**
  * A function called when a collision occurs.
- * @param body1 the first body passed to create_collision()
- * @param body2 the second body passed to create_collision()
+ * @param body1 the first body
+ * @param body2 the second body
  * @param axis a unit vector pointing from body1 towards body2
  *   that defines the direction the two bodies are colliding in
- * @param aux the auxiliary value passed to create_collision()
- * @param force_const the force constant passed to create_collision()
+ * @param aux the auxiliary value
+ * @param force_const the force constant
  */
 typedef void (*collision_handler_t)(body_t *body1, body_t *body2, vector_t axis,
                                     void *aux, double force_const);
@@ -73,16 +73,16 @@ void create_drag(scene_t *scene, double gamma, body_t *body);
  * @param handler a function to call whenever the bodies collide
  * @param aux an auxiliary value to pass to the handler
  * @param force_const a constant to pass to the handler
+ * @param freer a function to free the auxiliary value
  */
 void create_collision(scene_t *scene, body_t *body1, body_t *body2,
                       collision_handler_t handler, void *aux,
-                      double force_const);
+                      double force_const, free_func_t freer);
 
 /**
  * Adds a force creator to a scene that destroys two bodies when they collide.
- * The bodies should be destroyed by calling body_remove().
- * This should be represented as an on-collision callback
- * registered with create_collision().
+ * The bodies are destroyed by calling body_remove().
+ * Registered as an on-collision callback with create_collision().
  *
  * @param scene the scene containing the bodies
  * @param body1 the first body
@@ -91,21 +91,13 @@ void create_collision(scene_t *scene, body_t *body1, body_t *body2,
 void create_destructive_collision(scene_t *scene, body_t *body1, body_t *body2);
 
 /**
- * The collision handler for for physics collisions. Applies impulses to
- * bodies according to the elasticity in `aux`.
- */
-void physics_collision_handler(body_t *body1, body_t *body2, vector_t axis,
-                               void *aux, double force_const);
-
-/**
  * Adds a force creator to a scene that applies impulses
  * to resolve collisions between two bodies in the scene.
- * This should be represented as an on-collision callback
+ * This is represented as an on-collision callback
  * registered with create_collision().
  *
- * You may remember from project01 that you should avoid applying impulses
- * multiple times while the bodies are still colliding.
- * You should also have a special case that allows either body1 or body2
+ * Avoids applying impulses multiple times while the bodies are still colliding.
+ * Has a special case that allows either body1 or body2
  * to have mass INFINITY, as this is useful for simulating walls.
  *
  * @param scene the scene containing the bodies

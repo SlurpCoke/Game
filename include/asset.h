@@ -7,86 +7,65 @@
 #include <sdl_wrapper.h>
 #include <stddef.h>
 
-typedef enum { ASSET_IMAGE, ASSET_FONT, ASSET_BUTTON } asset_type_t;
+#include "body.h"
+
+typedef enum { ASSET_IMAGE, ASSET_TEXT } asset_type_t;
 
 typedef struct asset asset_t;
 
 /**
- * Gets the `asset_type_t` of the asset.
- *
- * @return the type of the asset.
- */
-asset_type_t asset_get_type(asset_t *asset);
-
-/**
- * Allocates memory for an image asset with the given parameters.
+ * Allocates memory for an image asset with the given parameters and adds it 
+ * to the internal asset list.
  *
  * @param filepath the filepath to the image file
  * @param bounding_box the bounding box containing the location and dimensions
  * of the text when it is rendered
- * @return a pointer to the newly allocated image asset
  */
-asset_t *asset_make_image(const char *filepath, SDL_Rect bounding_box);
+void *asset_make_image(const char *filepath, SDL_Rect bounding_box);
 
 /**
- * Allocates memory for an image asset with an attached body. When the asset
- * is rendered, the image will be rendered on top of the body.
+ * Allocates memory for an image asset with an attached body and adds it 
+ * to the internal asset list. When the asset is rendered, the image will be 
+ * rendered on top of the body.
  *
  * @param filepath the filepath to the image file
  * @param body the body to render the image on top of
- * @return a pointer to the newly allocated image asset
  */
-asset_t *asset_make_image_with_body(const char *filepath, body_t *body);
+void *asset_make_image_with_body(const char *filepath, body_t *body);
 
 /**
- * Allocates memory for a text asset with the given parameters.
+ * Allocates memory for a text asset with the given parameters and adds it 
+ * to the internal asset list.
  *
  * @param filepath the filepath to the .ttf file
  * @param bounding_box the bounding box containing the location and dimensions
  * of the text when it is rendered
  * @param text the text to render
  * @param color the color of the text
- * @return a pointer to the newly allocated text asset
  */
-asset_t *asset_make_text(const char *filepath, SDL_Rect bounding_box,
-                         const char *text, rgb_color_t color);
+void *asset_make_text(const char *filepath, SDL_Rect bounding_box,
+                         const char *text, color_t color);
 
 /**
- * A button handler.
- *
- * @param state the state of the game
+ * Resets the internal asset list by freeing all assets and creating a new empty list.
+ * This is useful when transitioning between scenes or levels.
  */
-typedef void (*button_handler_t)(void *state);
+void asset_reset_asset_list();
 
 /**
- * Allocates memory for a button asset with the given parameters.
- * Note that `image_asset` and `text_asset` should be owned by the caller. Thus,
- * `asset_destroy` will only free the memory allocated for the button.
- *
- * Asserts that `image_asset` is NULL or has type `ASSET_IMAGE`.
- * Asserts that `text_asset` is NULL or has type `ASSET_FONT`.
- *
- * @param bounding_box the bounding box containing the area on the screen that
- * should activate the button handler.
- * @param image_asset the image that the button renders. Can be NULL.
- * @param text_asset the text that the button renders. Can be NULL.
- * @param handler the button handler that runs when the button is clicked.
+ * Returns the internal list of all assets that have been created.
+ * 
+ * @return a pointer to the list containing all assets
  */
-asset_t *asset_make_button(SDL_Rect bounding_box, asset_t *image_asset,
-                           asset_t *text_asset, button_handler_t handler);
+list_t *asset_get_asset_list();
 
 /**
- * Runs the button handler for `button` if
- *
- * 1. `x` and `y` are contained in the button's bounding box.
- * 2. AND `button` is currently rendered onto the screen.
- *
- * @param button the pointer to the button asset
- * @param state the game state
- * @param x the x position of the mouse click
- * @param y the y position of the mouse click
+ * Removes and destroys all image assets associated with the given body.
+ * This is typically called when a body is destroyed to clean up its visual representation.
+ * 
+ * @param body the body whose associated assets should be removed
  */
-void asset_on_button_click(asset_t *button, state_t *state, double x, double y);
+void asset_remove_body(body_t *body);
 
 /**
  * Renders the asset to the screen.

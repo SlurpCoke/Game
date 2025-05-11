@@ -1,15 +1,19 @@
 #include "sdl_wrapper.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
 
 const char WINDOW_TITLE[] = "CS 3";
-const int WINDOW_WIDTH = 1000;
-const int WINDOW_HEIGHT = 500;
-const double MS_PER_S = 1e3;
+const size_t WINDOW_WIDTH = 1000;
+const size_t WINDOW_HEIGHT = 500;
+const SDL_Color SDL_BLACK = {0, 0, 0};
+const int8_t FONT_HEIGHT_SCALE = 2;
+const double MS_PER_S = 1000.0;
 
 /**
  * The coordinate at the center of the screen.
@@ -31,6 +35,7 @@ SDL_Renderer *renderer;
  * The keypress handler, or NULL if none has been configured.
  */
 key_handler_t key_handler = NULL;
+
 /**
  * SDL's timestamp when a key was last pressed or released.
  * Used to mesasure how long a key has been held.
@@ -114,10 +119,9 @@ void sdl_init(vector_t min, vector_t max) {
                             SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT,
                             SDL_WINDOW_RESIZABLE);
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-  TTF_Init();
 }
 
-bool sdl_is_done(void *state) {
+bool sdl_is_done(state_t *state) {
   SDL_Event *event = malloc(sizeof(*event));
   assert(event != NULL);
   while (SDL_PollEvent(event)) {
@@ -155,11 +159,19 @@ void sdl_clear(void) {
   SDL_RenderClear(renderer);
 }
 
-void sdl_draw_polygon(polygon_t *poly, rgb_color_t color) {
-  list_t *points = polygon_get_points(poly);
+void sdl_draw_body(body_t *body) {
   // Check parameters
+  list_t *points = body_get_shape(body);
   size_t n = list_size(points);
   assert(n >= 3);
+  color_t color = body_get_color(body);
+  double r = color.red;
+  double g = color.green;
+  double b = color.blue;
+
+  assert(0 <= r && r <= 1);
+  assert(0 <= g && g <= 1);
+  assert(0 <= b && b <= 1);
 
   vector_t window_center = get_window_center();
 
@@ -175,11 +187,30 @@ void sdl_draw_polygon(polygon_t *poly, rgb_color_t color) {
     y_points[i] = pixel.y;
   }
 
-  // Draw polygon with the given color
-  filledPolygonRGBA(renderer, x_points, y_points, n, color.r * 255,
-                    color.g * 255, color.b * 255, 255);
+  // Draw body with the given color
+  filledPolygonRGBA(renderer, x_points, y_points, n, r * 255, g * 255, b * 255,
+                    255);
+  sdl_show();
   free(x_points);
   free(y_points);
+}
+
+SDL_Texture *sdl_get_image_texture(const char *image_path) {
+  SDL_Texture *img = IMG_LoadTexture(renderer, image_path);
+  return img;
+}
+
+SDL_Rect *sdl_get_rect(double x, double y, double w, double h) {
+  SDL_Rect *rect = malloc(sizeof(SDL_Rect));
+  rect->x = x;
+  rect->y = y;
+  rect->w = w;
+  rect->h = h;
+  return rect;
+}
+
+void sdl_render_image(SDL_Texture *image_texture, SDL_Rect *rect) {
+  SDL_RenderCopy(renderer, image_texture, NULL, rect);
 }
 
 void sdl_show(void) {
@@ -201,19 +232,12 @@ void sdl_show(void) {
   SDL_RenderPresent(renderer);
 }
 
-void sdl_render_scene(scene_t *scene, void *aux) {
+void sdl_render_scene(scene_t *scene) {
   sdl_clear();
   size_t body_count = scene_bodies(scene);
   for (size_t i = 0; i < body_count; i++) {
     body_t *body = scene_get_body(scene, i);
-    list_t *shape = body_get_shape(body);
-    polygon_t *poly = polygon_init(shape, (vector_t){0, 0}, 0, 0, 0, 0);
-    sdl_draw_polygon(poly, *body_get_color(body));
-    list_free(shape);
-  }
-  if (aux != NULL) {
-    body_t *body = aux;
-    sdl_draw_polygon(body_get_polygon(body), *body_get_color(body));
+    sdl_draw_body(body);
   }
   sdl_show();
 }

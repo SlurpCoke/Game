@@ -3,7 +3,6 @@
 
 #include "color.h"
 #include "list.h"
-#include "polygon.h"
 #include "scene.h"
 #include "state.h"
 #include "vector.h"
@@ -53,40 +52,79 @@ void sdl_init(vector_t min, vector_t max);
 
 /**
  * Processes all SDL events and returns whether the window has been closed.
- * This function must be called in order to handle inputs.
+ * This function must be called in order to handle keypresses.
  *
  * @return true if the window was closed, false otherwise
  */
-bool sdl_is_done(void *state);
+bool sdl_is_done(state_t *state);
 
 /**
- * Clears the screen. Should be called before drawing polygons in each frame.
+ * Clears the screen. Should be called before drawing bodies in each frame.
  */
 void sdl_clear(void);
 
 /**
- * Draws a polygon from the given list of vertices and a color.
+ * Draws a body using the color of the body.
  *
- * @param poly a struct representing the polygon
- * @param color the color used to fill in the polygon
+ * @param body the body struct to draw
  */
-void sdl_draw_polygon(polygon_t *poly, rgb_color_t color);
+void sdl_draw_body(body_t *body);
+
+/**
+ * Loads an image from a file and returns it as an SDL texture.
+ *
+ * @param image_path the file path to the image
+ * @return a pointer to the loaded texture
+ */
+SDL_Texture *sdl_get_image_texture(const char *image_path);
+
+/**
+ * Creates an SDL_Rect with the specified dimensions.
+ *
+ * @param x the x-coordinate of the rectangle
+ * @param y the y-coordinate of the rectangle
+ * @param w the width of the rectangle
+ * @param h the height of the rectangle
+ * @return a pointer to the created rectangle
+ */
+SDL_Rect *sdl_get_rect(double x, double y, double w, double h);
+
+/**
+ * Renders an image to the screen using the specified texture and rectangle.
+ *
+ * @param image_texture the texture to render
+ * @param rect the rectangle defining the position and size of the rendered
+ * image
+ */
+void sdl_render_image(SDL_Texture *image_texture, SDL_Rect *rect);
+
+/**
+ * Renders text to the screen using the specified font, text, bounding box, and
+ * color.
+ *
+ * @param font the TTF_Font to use for rendering the text
+ * @param text the string of text to render
+ * @param bounding_box the SDL_Rect defining the position and size of the
+ * rendered text
+ * @param color the color to render the text with
+ */
+void sdl_render_text(TTF_Font *font, const char *text, SDL_Rect *bounding_box,
+                     color_t color);
 
 /**
  * Displays the rendered frame on the SDL window.
- * Must be called after drawing the polygons in order to show them.
+ * Must be called after drawing the bodies in order to show them.
  */
 void sdl_show(void);
 
 /**
  * Draws all bodies in a scene.
- * This internally calls sdl_clear(), sdl_draw_polygon(), and sdl_show(),
+ * This internally calls sdl_clear(), sdl_draw_body(), and sdl_show(),
  * so those functions should not be called directly.
  *
  * @param scene the scene to draw
- * @param aux an additional body to draw (can be NULL if no additional bodies)
  */
-void sdl_render_scene(scene_t *scene, void *aux);
+void sdl_render_scene(scene_t *scene);
 
 /**
  * Registers a function to be called every time a key is pressed.

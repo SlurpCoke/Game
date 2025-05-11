@@ -1,7 +1,6 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
-#include "vector.h"
 #include <stddef.h>
 
 /**
@@ -21,13 +20,14 @@ typedef void (*free_func_t)(void *);
  * Allocates memory for a new list with space for the given number of elements.
  * The list is initially empty.
  * Asserts that the required memory was allocated.
+ * Asserts that the initial capacity is greater than 0.
  *
- * @param initial_size the number of elements to allocate space for
+ * @param initial_capacity the number of elements to allocate space for
  * @param freer if non-NULL, a function to call on elements in the list
  *   in list_free() when they are no longer in use
  * @return a pointer to the newly allocated list
  */
-list_t *list_init(size_t initial_size, free_func_t freer);
+list_t *list_init(size_t initial_capacity, free_func_t freer);
 
 /**
  * Releases the memory allocated for a list.
@@ -56,6 +56,17 @@ size_t list_size(list_t *list);
 void *list_get(list_t *list, size_t index);
 
 /**
+ * Appends an element to the end of a list.
+ * If the list is filled to capacity, resizes the list to fit more elements
+ * and asserts that the resize succeeded.
+ * Asserts that the value being added is non-NULL.
+ *
+ * @param list a pointer to a list returned from list_init()
+ * @param value the element to add to the end of the list
+ */
+void list_add(list_t *list, void *value);
+
+/**
  * Removes the element at a given index in a list and returns it,
  * moving all subsequent elements towards the start of the list.
  * Asserts that the index is valid, given the list's current size.
@@ -64,16 +75,5 @@ void *list_get(list_t *list, size_t index);
  * @return the element at the given index in the list
  */
 void *list_remove(list_t *list, size_t index);
-
-/**
- * Appends an element to the end of a list.
- * If the list is filled to capacity, resizes the list to fit more elements
- * and asserts that the resize succeeded.
- * Also asserts that the value being added is non-NULL.
- *
- * @param list a pointer to a list returned from list_init()
- * @param value the element to add to the end of the list
- */
-void list_add(list_t *list, void *value);
 
 #endif // #ifndef __LIST_H__
