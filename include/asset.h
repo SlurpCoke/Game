@@ -14,7 +14,7 @@ typedef enum { ASSET_IMAGE, ASSET_TEXT } asset_type_t;
 typedef struct asset asset_t;
 
 /**
- * Allocates memory for an image asset with the given parameters and adds it 
+ * Allocates memory for an image asset with the given parameters and adds it
  * to the internal asset list.
  *
  * @param filepath the filepath to the image file
@@ -24,8 +24,8 @@ typedef struct asset asset_t;
 void *asset_make_image(const char *filepath, SDL_Rect bounding_box);
 
 /**
- * Allocates memory for an image asset with an attached body and adds it 
- * to the internal asset list. When the asset is rendered, the image will be 
+ * Allocates memory for an image asset with an attached body and adds it
+ * to the internal asset list. When the asset is rendered, the image will be
  * rendered on top of the body.
  *
  * @param filepath the filepath to the image file
@@ -34,7 +34,7 @@ void *asset_make_image(const char *filepath, SDL_Rect bounding_box);
 void *asset_make_image_with_body(const char *filepath, body_t *body);
 
 /**
- * Allocates memory for a text asset with the given parameters and adds it 
+ * Allocates memory for a text asset with the given parameters and adds it
  * to the internal asset list.
  *
  * @param filepath the filepath to the .ttf file
@@ -44,25 +44,26 @@ void *asset_make_image_with_body(const char *filepath, body_t *body);
  * @param color the color of the text
  */
 void *asset_make_text(const char *filepath, SDL_Rect bounding_box,
-                         const char *text, color_t color);
+                      const char *text, color_t color);
 
 /**
- * Resets the internal asset list by freeing all assets and creating a new empty list.
- * This is useful when transitioning between scenes or levels.
+ * Resets the internal asset list by freeing all assets and creating a new empty
+ * list. This is useful when transitioning between scenes or levels.
  */
 void asset_reset_asset_list();
 
 /**
  * Returns the internal list of all assets that have been created.
- * 
+ *
  * @return a pointer to the list containing all assets
  */
 list_t *asset_get_asset_list();
 
 /**
  * Removes and destroys all image assets associated with the given body.
- * This is typically called when a body is destroyed to clean up its visual representation.
- * 
+ * This is typically called when a body is destroyed to clean up its visual
+ * representation.
+ *
  * @param body the body whose associated assets should be removed
  */
 void asset_remove_body(body_t *body);
