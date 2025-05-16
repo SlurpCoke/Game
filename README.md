@@ -26,8 +26,6 @@ So the controls would be only through mouse cursors. From start to end for the p
 
 # **Features** {#features}
 
-Alex Derek Phoom
-
 **Priority 1 Features:**
 
 - Collisions between bullet-character  
