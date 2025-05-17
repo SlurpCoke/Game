@@ -50,16 +50,16 @@ static asset_t *asset_init(asset_type_t ty, SDL_Rect bounding_box) {
   return new;
 }
 
-void *asset_make_image_with_body(const char *filepath, body_t *body) {
+void asset_make_image_with_body(const char *filepath, body_t *body) {
   // TODO: implement this!
 }
 
-void *asset_make_image(const char *filepath, SDL_Rect bounding_box) {
+void asset_make_image(const char *filepath, SDL_Rect bounding_box) {
   // TODO: copy over your code from project05 and add the asset to the asset
   // list
 }
 
-void *asset_make_text(const char *filepath, SDL_Rect bounding_box,
+void asset_make_text(const char *filepath, SDL_Rect bounding_box,
                       const char *text, color_t color) {
   // TODO: copy over your code from project05 and add the asset to the asset
   // list
