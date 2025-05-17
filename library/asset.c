@@ -60,7 +60,7 @@ void asset_make_image(const char *filepath, SDL_Rect bounding_box) {
 }
 
 void asset_make_text(const char *filepath, SDL_Rect bounding_box,
-                      const char *text, color_t color) {
+                     const char *text, color_t color) {
   // TODO: copy over your code from project05 and add the asset to the asset
   // list
 }
