@@ -11,28 +11,14 @@
 #include "forces.h"
 #include "sdl_wrapper.h"
 
-const double WEDGE_ANGLE = 3.6 * M_PI / 3;
-const double INCREMENT_ANGLE = 0.1;
-const double RADIUS = 40;
-const double BULLET_RADIUS = 10;
-
 const vector_t MIN = {0, 0};
 const vector_t MAX = {1000, 500};
 
 const vector_t START_POS = {500, 30};
 const vector_t RESET_POS = {500, 45};
-const vector_t INVADER_BULLET_VEL = {0, -200};
 const vector_t BASE_OBJ_VEL = {30, 0};
 const double EXTRA_VEL_MULT = 10;
 const double VEL_MULT_PROB = 0.2;
-
-const double MASS = 5;
-const double BULLET_MASS = 10;
-
-const size_t SPAWN_TIME = 200; // number of frames in between new shapes
-
-const double resting_speed = 300;
-const double ACCEL = 100;
 
 const double OUTER_RADIUS = 15;
 const double INNER_RADIUS = 15;
@@ -40,19 +26,16 @@ const size_t OBSTACLE_HEIGHT = 30;
 const vector_t OBS_WIDTHS = {30, 70};
 const vector_t OBS_SPACING = {120, 350};
 
-const size_t SHIP_NUM_POINTS = 20;
+const size_t FROG_NUM_POINTS = 20;
 
-const color_t obs_color = (color_t){0.2, 0.2, 0.3};
-const color_t frog_color = (color_t){0.1, 0.9, 0.2};
+const color_t OBS_COLOR = (color_t){0.2, 0.2, 0.3};
+const color_t FROG_COLOR = (color_t){0.1, 0.9, 0.2};
 
 // constants to create invaders
 const int16_t H_STEP = 20;
 const int16_t V_STEP = 40;
-const size_t OBS_PER_ROW = 5;
 const size_t ROWS = 8;
 
-const size_t OFFSET = 3;
-const size_t CIRC_NPOINTS = 4;
 const size_t BODY_ASSETS = 2;
 
 const char *FROGGER_PATH = "assets/frogger.png";
@@ -60,7 +43,7 @@ const char *LOG_PATH = "assets/log.png";
 const char *BACKGROUND_PATH = "assets/frogger-background.png";
 
 struct state {
-  asset_t *frog;
+  body_t *frog;
   scene_t *scene;
   int16_t points;
 };
@@ -82,22 +65,22 @@ body_t *make_obstacle(size_t w, size_t h, vector_t center) {
   vector_t *v4 = malloc(sizeof(vector_t));
   *v4 = (vector_t){0, h};
   list_add(c, v4);
-  body_t *obstacle = body_init(c, 1, obs_color);
+  body_t *obstacle = body_init(c, 1, OBS_COLOR);
   body_set_centroid(obstacle, center);
   return obstacle;
 }
 
 body_t *make_frog(double outer_radius, double inner_radius, vector_t center) {
   center.y += inner_radius;
-  list_t *c = list_init(SHIP_NUM_POINTS, free);
-  for (size_t i = 0; i < SHIP_NUM_POINTS; i++) {
-    double angle = 2 * M_PI * i / SHIP_NUM_POINTS;
+  list_t *c = list_init(FROG_NUM_POINTS, free);
+  for (size_t i = 0; i < FROG_NUM_POINTS; i++) {
+    double angle = 2 * M_PI * i / FROG_NUM_POINTS;
     vector_t *v = malloc(sizeof(*v));
     *v = (vector_t){center.x + inner_radius * cos(angle),
                     center.y + outer_radius * sin(angle)};
     list_add(c, v);
   }
-  body_t *froggy = body_init(c, 1, frog_color);
+  body_t *froggy = body_init(c, 1, FROG_COLOR);
   return froggy;
 }
 
@@ -160,23 +143,8 @@ double rand_double(double low, double high) {
   return (high - low) * rand() / RAND_MAX + low;
 }
 
-state_t *emscripten_init() {
-  asset_cache_init();
-  sdl_init(MIN, MAX);
-  state_t *state = malloc(sizeof(state_t));
-  state->points = 0;
-  srand(time(NULL));
-  state->scene = scene_init();
-
-  body_t *froggy = make_frog(OUTER_RADIUS, INNER_RADIUS, VEC_ZERO);
-  body_set_centroid(froggy, RESET_POS);
-
-  scene_add_body(state->scene, froggy);
-
-  // TODO (task 4c): make the asset for the background image
-
-  // TODO (task 4a): make the asset for the frog image
-
+void make_logs(state_t *state) {
+  body_t *froggy = state->frog;
   for (size_t r = 3; r < ROWS + 3; r++) {
     double cx = 0;
     double cy = r * V_STEP + body_get_centroid(froggy).y;
@@ -203,6 +171,28 @@ state_t *emscripten_init() {
       // TODO (task 4a): make the asset for the log image
     }
   }
+}
+
+state_t *emscripten_init() {
+  asset_cache_init();
+  sdl_init(MIN, MAX);
+  state_t *state = malloc(sizeof(state_t));
+  state->points = 0;
+  srand(time(NULL));
+  state->scene = scene_init();
+
+  body_t *froggy = make_frog(OUTER_RADIUS, INNER_RADIUS, VEC_ZERO);
+  body_set_centroid(froggy, RESET_POS);
+  state->frog = froggy;
+
+  scene_add_body(state->scene, froggy);
+
+  // TODO (task 4a): make the asset for the frog image  
+  
+  // TODO (task 4c): make the asset for the background image
+
+  make_logs(state);
+  
   sdl_on_key((key_handler_t)on_key);
   return state;
 }
