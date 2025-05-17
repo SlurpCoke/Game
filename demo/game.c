@@ -187,12 +187,12 @@ state_t *emscripten_init() {
 
   scene_add_body(state->scene, froggy);
 
-  // TODO (task 4a): make the asset for the frog image  
-  
+  // TODO (task 4a): make the asset for the frog image
+
   // TODO (task 4c): make the asset for the background image
 
   make_logs(state);
-  
+
   sdl_on_key((key_handler_t)on_key);
   return state;
 }
