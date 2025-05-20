@@ -19,8 +19,7 @@ The loss condition is missing more than the opposing pirates such that all playe
 There are different difficulty levels. 
 
 1. Rookie mode: Low enemy accuracy & available aiming cursor  
-2. Warlord mode: High enemy accuracy & available aiming cursor  
-3. Pirate King mode: High enemy accuracy & no aiming cursor
+2. Pirate King mode: High enemy accuracy & no aiming cursor
 
 So the controls would be only through mouse cursors. From start to end for the player, it will take turns between the player and the enemy shooting each other until one side is out of hp or knocked out. As soon as this happens, the game stops and declares a win or a loss. For the graphics, we will make our own character models as well as the different projectiles. Our game will rely heavily on the physics engine as we will have to use the collision logic for when the projectile collides with the enemy entity, but also to calculate where the projectile is going to land after getting launched. 
 
@@ -53,19 +52,13 @@ So the controls would be only through mouse cursors. From start to end for the p
 - Random level generation  
   - Platforms of different height  
   - Different number of enemies  
-  - Obstacles in the middle to block direct shots  
 - Different Projectiles  
-  - Grenade (will knock enemies back more, larger damage radius)  
-  - Arrows (no knockback, more damage  
 - Difficulty Selector  
   - Shown before starting the game. *Refer to [Gameplay](#gameplay) for more information*
 
 **Priority 4 Features:**
 
 - Sound effects  
-  - Bullet hit/miss  
-  - Water splash when character falls  
-  - Win/lose SFX  
 - Music (changes when player 1, player 2 or enemy has low HP)  
 - Backgrounds (dimmed when player about to die, changes depending on difficulty level)
 
