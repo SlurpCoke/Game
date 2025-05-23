@@ -1,9 +1,11 @@
 #ifndef __SDL_WRAPPER_H__
 #define __SDL_WRAPPER_H__
 
+#include <SDL2/SDL.h>
 #include "color.h"
 #include "list.h"
 #include "scene.h"
+#include "body.h"
 #include "state.h"
 #include "vector.h"
 #include <SDL2/SDL_image.h>
@@ -90,6 +92,14 @@ SDL_Texture *sdl_get_image_texture(const char *image_path);
 SDL_Rect *sdl_get_rect(double x, double y, double w, double h);
 
 /**
+ * Calculates smallest SDL_Rect enclosing given body
+ * 
+ * @param body a pointer to body_t
+ * @return an SDL_Rect representing the bounding box of the body
+ */
+SDL_Rect sdl_get_body_bounding_box(body_t *body);
+
+/**
  * Renders an image to the screen using the specified texture and rectangle.
  *
  * @param image_texture the texture to render
@@ -97,6 +107,19 @@ SDL_Rect *sdl_get_rect(double x, double y, double w, double h);
  * image
  */
 void sdl_render_image(SDL_Texture *image_texture, SDL_Rect *rect);
+
+/**
+ * Renders text to the screen using font, text, destination, and color
+ * Text isi rendered onto a temporary surface, then texture, then copied to
+ * renderer, stretched to fit destination rectangle
+ *
+ * @param font the TTF_Font to use
+ * @param text the string to render
+ * @param dest_rect the SDL_Rect defining the position/size for rendered text
+ * @param color the SDL_Color to use
+ */
+void sdl_render_text(TTF_Font *font, const char *text, SDL_Rect dest_rect,
+                     SDL_Color color);
 
 /**
  * Displays the rendered frame on the SDL window.

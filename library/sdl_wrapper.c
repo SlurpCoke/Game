@@ -6,13 +6,14 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+#include <float.h>
 
 const char WINDOW_TITLE[] = "CS 3";
 const size_t WINDOW_WIDTH = 1000;
 const size_t WINDOW_HEIGHT = 500;
 const SDL_Color SDL_BLACK = {0, 0, 0};
-const int8_t FONT_HEIGHT_SCALE = 2;
 const double MS_PER_S = 1000.0;
 
 /**
@@ -209,8 +210,104 @@ SDL_Rect *sdl_get_rect(double x, double y, double w, double h) {
   return rect;
 }
 
+SDL_Rect sdl_get_body_bounding_box(body_t *body) {
+  list_t *shape = body_get_shape(body);
+  size_t num_points = list_size(shape);
+
+  if (num_points == 0) {
+    list_free(shape);
+    return (SDL_Rect){0, 0, 0, 0};
+  }
+
+  vector_t window_center = get_window_center();
+
+  vector_t *first_v_scene = (vector_t *)list_get(shape, 0);
+  vector_t first_v_pixel = get_window_position(*first_v_scene, window_center);
+
+  double min_x_pixel = first_v_pixel.x;
+  double max_x_pixel = first_v_pixel.x;
+  double min_y_pixel = first_v_pixel.y;
+  double max_y_pixel = first_v_pixel.y;
+
+  for (size_t i = 1; i < num_points; i++) {
+    vector_t *v_scene = (vector_t *)list_get(shape, i);
+    vector_t v_pixel = get_window_position(*v_scene, window_center);
+
+    if (v_pixel.x < min_x_pixel) {
+      min_x_pixel = v_pixel.x;
+    }
+    if (v_pixel.x > max_x_pixel) {
+      max_x_pixel = v_pixel.x;
+    }
+    if (v_pixel.y < min_y_pixel) {
+      min_y_pixel = v_pixel.y;
+    }
+    if (v_pixel.y > max_y_pixel) {
+      max_y_pixel = v_pixel.y;
+    }
+  }
+  list_free(shape);
+
+  SDL_Rect bounding_box;
+  bounding_box.x = (int)round(min_x_pixel);
+  bounding_box.y = (int)round(min_y_pixel);
+  bounding_box.w = (int)round(max_x_pixel - min_x_pixel);
+  bounding_box.h = (int)round(max_y_pixel - min_y_pixel);
+
+  if (bounding_box.w < 0) {
+    bounding_box.w = 0;
+  }
+  if (bounding_box.h < 0) {
+    bounding_box.h = 0;
+  }
+
+  return bounding_box;
+}
+
 void sdl_render_image(SDL_Texture *image_texture, SDL_Rect *rect) {
   SDL_RenderCopy(renderer, image_texture, NULL, rect);
+}
+
+void sdl_render_text(TTF_Font *font, const char *text, SDL_Rect dest_rect,
+                     SDL_Color color) {
+  if (!font) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "sdl_render_text: TTF_Font is Null.");
+    return;
+  }
+  if (!text) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "sdl_render_text: Text string is Null.");
+    return;
+  }
+
+  if (strlen(text) == 0) {
+    return;
+  }
+
+  SDL_Surface *text_surface = TTF_RenderText_Blended(font, text, color);
+  if (!text_surface) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "TTF_RenderText_Blended Error: %s", TTF_GetError());
+    return;
+  }
+
+  SDL_Texture *text_texture =
+      SDL_CreateTextureFromSurface(renderer, text_surface);
+  SDL_FreeSurface(text_surface);
+
+  if (!text_texture) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "SDL_CreateTextureFrom Surface Error: %s", SDL_GetError());
+    return;
+  }
+
+  if (SDL_RenderCopy(renderer, text_texture, NULL, &dest_rect) != 0) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "SDL_RenderCopy Error in sdl_render_text: %s", SDL_GetError());
+  }
+
+  SDL_DestroyTexture(text_texture);
 }
 
 void sdl_show(void) {

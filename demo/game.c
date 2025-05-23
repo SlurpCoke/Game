@@ -10,6 +10,9 @@
 #include "collision.h"
 #include "forces.h"
 #include "sdl_wrapper.h"
+#include "body.h"
+#include "scene.h"
+#include "state.h"
 
 const vector_t MIN = {0, 0};
 const vector_t MAX = {1000, 500};
@@ -168,7 +171,7 @@ void make_logs(state_t *state) {
       create_collision(state->scene, froggy, obstacle, reset_user_handler, NULL,
                        0, NULL);
 
-      // TODO (task 4a): make the asset for the log image
+      asset_make_image_with_body(LOG_PATH, obstacle);
     }
   }
 }
@@ -181,13 +184,15 @@ state_t *emscripten_init() {
   srand(time(NULL));
   state->scene = scene_init();
 
+  asset_make_image(BACKGROUND_PATH, (SDL_Rect){0, 0, (int)MAX.x, (int)MAX.y});
+
   body_t *froggy = make_frog(OUTER_RADIUS, INNER_RADIUS, VEC_ZERO);
   body_set_centroid(froggy, RESET_POS);
   state->frog = froggy;
 
   scene_add_body(state->scene, froggy);
 
-  // TODO (task 4a): make the asset for the frog image
+  asset_make_image_with_body(FROGGER_PATH, froggy);
 
   // TODO (task 4c): make the asset for the background image
 
@@ -204,7 +209,7 @@ bool emscripten_main(state_t *state) {
     wrap_edges(scene_get_body(state->scene, i));
   }
   sdl_clear();
-  sdl_render_scene(state->scene);
+
   list_t *body_assets = asset_get_asset_list();
   for (size_t i = 0; i < list_size(body_assets); i++) {
     asset_render(list_get(body_assets, i));
