@@ -7,10 +7,10 @@
 
 #include "asset.h"
 #include "asset_cache.h"
-#include "color.h"
-#include "sdl_wrapper.h"
 #include "body.h"
+#include "color.h"
 #include "list.h"
+#include "sdl_wrapper.h"
 
 static list_t *ASSET_LIST = NULL;
 const size_t INIT_CAPACITY = 5;
@@ -72,9 +72,11 @@ static SDL_Color color_t_to_sdl_color(color_t c) {
 
 void asset_make_image_with_body(const char *filepath, body_t *body) {
   SDL_Rect arbitrary_rect = {0, 0, 0, 0};
-  image_asset_t *new_image = (image_asset_t *)asset_init(ASSET_IMAGE, arbitrary_rect);
+  image_asset_t *new_image =
+      (image_asset_t *)asset_init(ASSET_IMAGE, arbitrary_rect);
 
-  new_image->texture = (SDL_Texture *)asset_cache_obj_get_or_create(ASSET_IMAGE, filepath);
+  new_image->texture =
+      (SDL_Texture *)asset_cache_obj_get_or_create(ASSET_IMAGE, filepath);
   new_image->body = body;
 
   list_add(ASSET_LIST, new_image);
@@ -91,7 +93,8 @@ void asset_make_image(const char *filepath, SDL_Rect bounding_box) {
   list_add(ASSET_LIST, new_image);
 }
 
-void asset_make_text(const char *filepath, SDL_Rect bounding_box, const char *text, color_t color) {
+void asset_make_text(const char *filepath, SDL_Rect bounding_box,
+                     const char *text, color_t color) {
   text_asset_t *new_text = (text_asset_t *)asset_init(ASSET_TEXT, bounding_box);
 
   new_text->font =

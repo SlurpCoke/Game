@@ -4,11 +4,11 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <assert.h>
+#include <float.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <float.h>
 
 const char WINDOW_TITLE[] = "CS 3";
 const size_t WINDOW_WIDTH = 1000;

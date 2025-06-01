@@ -59,7 +59,7 @@ static vector_t get_max_min_projections(list_t *shape, vector_t unit_axis) {
 static vector_t centroid_from_vertices(list_t *vertices) {
   vector_t sum_v = VEC_ZERO;
   size_t num_vertices = list_size(vertices);
-  
+
   for (size_t i = 0; i < num_vertices; i++) {
     sum_v = vec_add(sum_v, *(vector_t *)list_get(vertices, i));
   }
@@ -76,14 +76,15 @@ static vector_t centroid_from_vertices(list_t *vertices) {
  * @param shape2 the second shape
  * @return whether the shapes are colliding
  */
-static collision_info_t compare_collision(list_t *shape1, list_t *shape2, double *min_overlap) {
+static collision_info_t compare_collision(list_t *shape1, list_t *shape2,
+                                          double *min_overlap) {
   collision_info_t result_info;
   result_info.collided = false;
   result_info.axis = VEC_ZERO;
 
   double current_min_overlap = __DBL_MAX__;
   vector_t axis_min_overlap = VEC_ZERO;
-  
+
   list_t *edges1 = get_edges(shape1);
   assert(edges1 != NULL);
 
@@ -107,7 +108,8 @@ static collision_info_t compare_collision(list_t *shape1, list_t *shape2, double
       return result_info;
     }
 
-    double overlap = fmin(projections1.x, projections2.x) - fmax(projections1.y, projections2.y);
+    double overlap = fmin(projections1.x, projections2.x) -
+                     fmax(projections1.y, projections2.y);
 
     if (overlap < current_min_overlap) {
       current_min_overlap = overlap;

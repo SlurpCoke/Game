@@ -7,11 +7,11 @@
 
 #include "asset.h"
 #include "asset_cache.h"
+#include "body.h"
 #include "collision.h"
 #include "forces.h"
-#include "sdl_wrapper.h"
-#include "body.h"
 #include "scene.h"
+#include "sdl_wrapper.h"
 #include "state.h"
 
 const vector_t MIN = {0, 0};

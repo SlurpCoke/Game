@@ -1,13 +1,13 @@
 #ifndef __SDL_WRAPPER_H__
 #define __SDL_WRAPPER_H__
 
-#include <SDL2/SDL.h>
+#include "body.h"
 #include "color.h"
 #include "list.h"
 #include "scene.h"
-#include "body.h"
 #include "state.h"
 #include "vector.h"
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
@@ -93,7 +93,7 @@ SDL_Rect *sdl_get_rect(double x, double y, double w, double h);
 
 /**
  * Calculates smallest SDL_Rect enclosing given body
- * 
+ *
  * @param body a pointer to body_t
  * @return an SDL_Rect representing the bounding box of the body
  */
