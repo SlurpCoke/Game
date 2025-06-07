@@ -35,7 +35,7 @@ const color_t WATER_DEATH_COLOR = (color_t){0.1, 0.1, 0.1};
 // Sizes and Positions
 const double PLATFORM_WIDTH = 150.0;
 const double PLATFORM_HEIGHT = 20.0;
-const double CHARACTER_SIZE = 80.0;
+const double CHARACTER_SIZE = 30.0;
 const double BULLET_WIDTH = 20.0;
 const double BULLET_HEIGHT = 10.0;
 const double WATER_Y_CENTER = 10.0;
@@ -57,9 +57,6 @@ const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - CHARACTER_SIZE / 1.5,
 const vector_t ENEMY2_START_POS = {PLATFORM_R_POS.x + CHARACTER_SIZE / 1.5,
                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
                                        CHARACTER_SIZE / 2.0 + 0.1};
-// PNG File Paths
-const char *PLAYER1_PATH = "assets/player_1.png";
-const char *ENEMY_PATH = "assets/enemy.png";
 
 // Physics & Game Constants
 const double BULLET_VELOCITY_X = 250.0;
@@ -412,7 +409,6 @@ state_t *emscripten_init() {
 
   current_state->player = make_character_body(
       PLAYER_START_POS, CHARACTER_SIZE, PLAYER_COLOR, TYPE_PLAYER, 0, 10.0);
-  asset_make_image_with_body(PLAYER1_PATH, current_state->player);
   scene_add_body(current_state->scene, current_state->player);
   list_add(current_state->all_characters, current_state->player);
   create_collision(current_state->scene, current_state->player,
@@ -424,7 +420,6 @@ state_t *emscripten_init() {
 
   current_state->enemy1 = make_character_body(
       ENEMY1_START_POS, CHARACTER_SIZE, ENEMY_COLOR_1, TYPE_ENEMY, 1, 10.0);
-  asset_make_image_with_body(ENEMY_PATH, current_state->enemy1);
   scene_add_body(current_state->scene, current_state->enemy1);
   list_add(current_state->all_characters, current_state->enemy1);
   create_collision(current_state->scene, current_state->enemy1,
@@ -436,7 +431,6 @@ state_t *emscripten_init() {
 
   current_state->enemy2 = make_character_body(
       ENEMY2_START_POS, CHARACTER_SIZE, ENEMY_COLOR_2, TYPE_ENEMY, 2, 10.0);
-  asset_make_image_with_body(ENEMY_PATH, current_state->enemy2);
   scene_add_body(current_state->scene, current_state->enemy2);
   list_add(current_state->all_characters, current_state->enemy2);
   create_collision(current_state->scene, current_state->enemy2,
@@ -534,9 +528,6 @@ bool emscripten_main(state_t *current_state) {
       // Don't draw HP bar bodies here, we will draw them separately
       body_type_t *info = body_get_info(body_to_draw);
       if (!info || *info != TYPE_HP_BAR) {
-        if (info && (*info == TYPE_PLAYER || *info == TYPE_ENEMY)) {
-          continue;
-        }
         sdl_draw_body(body_to_draw);
       }
     }
