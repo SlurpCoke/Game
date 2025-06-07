@@ -206,3 +206,5 @@ bool body_is_removed(body_t *body);
  * @param body the pointer to the body
  */
 void body_free(body_t *body);
+
+#endif // #ifndef __BODY_H__
