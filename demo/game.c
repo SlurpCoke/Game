@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <SDL2/SDL_mixer.h>
 
 #include "asset.h"
 #include "asset_cache.h"
@@ -57,6 +58,11 @@ const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - CHARACTER_SIZE / 1.5,
 const vector_t ENEMY2_START_POS = {PLATFORM_R_POS.x + CHARACTER_SIZE / 1.5,
                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
                                        CHARACTER_SIZE / 2.0 + 0.1};
+
+// Audio File Paths
+const char *BACKGROUND_MUSIC_PATH = "assets/calm_pirate.wav";
+const char *LOW_HP_MUSIC_PATH = "assets/pirate_music.wav";
+
 // PNG File Paths
 const char *PLAYER1_PATH = "assets/player_1.png";
 const char *ENEMY_PATH = "assets/enemy.png";
@@ -67,6 +73,8 @@ const double GRAVITY_ACCELERATION = 250.0;
 const double KNOCKBACK_BASE_VELOCITY_X = 40.0;
 const double KNOCKBACK_BASE_VELOCITY_Y = 100.0;
 const double MAX_HEALTH = 100.0;
+const double SHOT_DELAY_TIME = 1.0;
+const double LOW_HP_THRESHOLD = 50.0;
 
 const char *BACKGROUND_PATH = "assets/frogger-background.png";
 
@@ -81,6 +89,12 @@ typedef enum {
   TYPE_HP_BAR
 } body_type_t;
 
+typedef enum {
+  TURN_PLAYER,
+  TURN_ENEMY1,
+  TURN_ENEMY2
+} turn_order_t;
+
 typedef struct {
   body_type_t type;
   bool affected_by_gravity;
@@ -88,6 +102,7 @@ typedef struct {
   int id;
   double current_hp;
   double max_hp;
+  bool died_from_water; 
 } character_info_t;
 
 typedef enum {
@@ -97,10 +112,12 @@ typedef enum {
   ENEMY1_SHOT_ACTIVE,
   ENEMY2_FIRING,
   ENEMY2_SHOT_ACTIVE,
-  GAME_OVER_WATER
+  SHOT_DELAY,
+  GAME_OVER_WATER,
+  GAME_OVER_PLAYER_DEAD,
+  GAME_WON_PLAYER_WON
 } game_status_t;
 
-// This was corrupted in the last response. Here is the correct definition.
 struct state {
   scene_t *scene;
   body_t *player;
@@ -117,6 +134,14 @@ struct state {
   body_t *enemy2_hp_bar_bg;
   list_t *all_characters;
   game_status_t current_status;
+  turn_order_t current_turn;
+  double shot_delay_timer;
+  turn_order_t next_turn_after_delay;
+  bool game_over_message_printed;
+  Mix_Music *background_music;
+  Mix_Music *low_hp_music;
+  bool is_low_hp_music_playing;
+  bool audio_initialized;
 };
 
 // Forward declarations
@@ -128,7 +153,215 @@ void apply_conditional_gravity(void *aux_state, list_t *all_characters);
 void character_platform_contact_handler(body_t *character, body_t *platform,
                                         vector_t axis, void *aux,
                                         double force_const);
-void draw_hp_bars(state_t *state); // *** FIX: ADDED FORWARD DECLARATION ***
+void update_and_draw_hp_bars(state_t *state);
+void check_game_over(state_t *state);
+void init_audio_system(state_t *state);
+void cleanup_audio_system(state_t *state);
+void check_and_update_music(state_t *state);
+bool is_any_character_low_hp(state_t *state);
+bool is_character_alive(body_t *character);
+
+// initialize audio
+void init_audio_system(state_t *state) {
+    state->audio_initialized = false;
+    state->background_music = NULL;
+    state->low_hp_music = NULL;
+    state->is_low_hp_music_playing = false;
+    
+    // SDL mixer
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0){
+      return;
+    }
+    
+    // Background music
+    state->background_music = Mix_LoadMUS(BACKGROUND_MUSIC_PATH);
+    
+    // Load low HP music
+    state->low_hp_music = Mix_LoadMUS(LOW_HP_MUSIC_PATH);
+
+    state->audio_initialized = true;
+    
+    if (state->background_music){
+        if (Mix_PlayMusic(state->background_music, -1) == -1){
+            printf("Music Failed");
+        } else {
+            printf("Background music.\n");
+        }
+    }
+}
+
+// Free audio resources
+void cleanup_audio_system(state_t *state) {
+    if (!state->audio_initialized) return;
+    
+    // Stop all music
+    Mix_HaltMusic();
+    
+    // Free music resources
+    if (state->background_music){
+        Mix_FreeMusic(state->background_music);
+        state->background_music = NULL;
+    }
+    
+    if (state->low_hp_music){
+        Mix_FreeMusic(state->low_hp_music);
+        state->low_hp_music = NULL;
+    }
+    
+    // Close SDL_mixer
+    Mix_CloseAudio();
+    state->audio_initialized = false;
+}
+
+// check for low hp
+bool is_any_character_low_hp(state_t *state) {
+    character_info_t *player_info = (character_info_t *)body_get_info(state->player);
+    character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
+    character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
+    
+    bool player_alive = is_character_alive(state->player);
+    bool enemy1_alive = is_character_alive(state->enemy1);
+    bool enemy2_alive = is_character_alive(state->enemy2);
+    
+    // Check if any alive character has low HP
+    if (player_alive && player_info && player_info->current_hp <= LOW_HP_THRESHOLD){
+        return true;
+    }
+    if (enemy1_alive && enemy1_info && enemy1_info->current_hp <= LOW_HP_THRESHOLD){
+        return true;
+    }
+    if (enemy2_alive && enemy2_info && enemy2_info->current_hp <= LOW_HP_THRESHOLD){
+        return true;
+    }
+    return false;
+}
+
+// Update music
+void check_and_update_music(state_t *state) {
+    bool should_play_low_hp = is_any_character_low_hp(state);
+    // If low hp & music not playing
+    if (should_play_low_hp && !state->is_low_hp_music_playing){
+        if (state->low_hp_music) {
+            Mix_HaltMusic();
+            if (Mix_PlayMusic(state->low_hp_music, -1) == -1) {
+                printf("Music Failed");
+            } else {
+                printf("Low HP music.\n");
+                state->is_low_hp_music_playing = true;
+            }
+        }
+    }
+}
+
+// check if alive hp
+bool is_character_alive(body_t *character) {
+    if (!character || body_is_removed(character)){
+        return false;
+    }
+    
+    character_info_t *info = (character_info_t *)body_get_info(character);
+    if (!info || info->current_hp <= 0 || info->died_from_water){
+        return false;
+    }
+    
+    return true;
+}
+
+// check for game conditions
+void check_game_over(state_t *state) {
+    if (state->current_status == GAME_OVER_WATER || 
+        state->current_status == GAME_OVER_PLAYER_DEAD ||
+        state->current_status == GAME_WON_PLAYER_WON){
+        return;
+    }
+    
+    bool player_alive = is_character_alive(state->player);
+    bool enemy1_alive = is_character_alive(state->enemy1);
+    bool enemy2_alive = is_character_alive(state->enemy2);
+
+    // Check if player lost
+    if (!player_alive){
+        state->current_status = GAME_OVER_PLAYER_DEAD;
+        state->game_over_message_printed = false;
+        
+        // Stop movement
+        body_set_velocity(state->player, VEC_ZERO);
+        body_set_velocity(state->enemy1, VEC_ZERO);
+        body_set_velocity(state->enemy2, VEC_ZERO);
+        
+        character_info_t *player_info = (character_info_t *)body_get_info(state->player);
+        character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
+        character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
+        
+        if (player_info){
+            player_info->affected_by_gravity = false;
+            player_info->is_knocked_back = false;
+        }
+        if (enemy1_info){
+            enemy1_info->affected_by_gravity = false;
+            enemy1_info->is_knocked_back = false;
+        }
+        if (enemy2_info){
+            enemy2_info->affected_by_gravity = false;
+            enemy2_info->is_knocked_back = false;
+        }
+    }
+    // Check if player won
+    else if (player_alive && !enemy1_alive && !enemy2_alive){
+        state->current_status = GAME_WON_PLAYER_WON;
+        state->game_over_message_printed = false;
+        
+        // Stop movement
+        body_set_velocity(state->player, VEC_ZERO);
+        body_set_velocity(state->enemy1, VEC_ZERO);
+        body_set_velocity(state->enemy2, VEC_ZERO);
+        
+        character_info_t *player_info = (character_info_t *)body_get_info(state->player);
+        character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
+        character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
+        
+        if (player_info){
+            player_info->affected_by_gravity = false;
+            player_info->is_knocked_back = false;
+        }
+        if (enemy1_info){
+            enemy1_info->affected_by_gravity = false;
+            enemy1_info->is_knocked_back = false;
+        }
+        if (enemy2_info){
+            enemy2_info->affected_by_gravity = false;
+            enemy2_info->is_knocked_back = false;
+        }
+    }
+}
+
+// calculates turn order player -> enemy
+turn_order_t get_next_turn(turn_order_t last_turn, body_t *player, body_t *enemy1, body_t *enemy2) {
+    bool player_alive = is_character_alive(player);
+    bool enemy1_alive = is_character_alive(enemy1);
+    bool enemy2_alive = is_character_alive(enemy2);
+    
+    // cycle through, skipping dead characters
+    switch (last_turn){
+        case TURN_PLAYER:
+            if (enemy1_alive) return TURN_ENEMY1;
+            else if (enemy2_alive) return TURN_ENEMY2;
+            else if (player_alive) return TURN_PLAYER;
+            break;
+        case TURN_ENEMY1:
+            if (enemy2_alive) return TURN_ENEMY2;
+            else if (player_alive) return TURN_PLAYER;
+            else if (enemy1_alive) return TURN_ENEMY1;
+            break;
+        case TURN_ENEMY2:
+            if (player_alive) return TURN_PLAYER;
+            else if (enemy1_alive) return TURN_ENEMY1;
+            else if (enemy2_alive) return TURN_ENEMY2;
+            break;
+    }
+    
+    return TURN_PLAYER; 
+}
 
 body_t *make_generic_rectangle_body(vector_t center, double width,
                                     double height, color_t color,
@@ -178,6 +411,7 @@ body_t *make_character_body(vector_t center, double size, color_t color,
   info->id = id;
   info->max_hp = MAX_HEALTH;
   info->current_hp = MAX_HEALTH;
+  info->died_from_water = false;
 
   body_t *char_body = body_init_with_info(shape, mass, color, info, free);
   body_set_centroid(char_body, center);
@@ -247,9 +481,12 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
 
 void on_key_press(char key, key_event_type_t type, double held_time,
                   state_t *current_state) {
-  if (type == KEY_PRESSED && current_state->current_status != GAME_OVER_WATER) {
+  if (type == KEY_PRESSED && 
+      current_state->current_status != GAME_OVER_WATER &&
+      current_state->current_status != GAME_OVER_PLAYER_DEAD) {
     if (key == SPACE_BAR &&
-        current_state->current_status == WAITING_FOR_PLAYER_SHOT) {
+        current_state->current_status == WAITING_FOR_PLAYER_SHOT &&
+        current_state->current_turn == TURN_PLAYER) {
       printf("Player firing.\n");
       fire_bullet(current_state, current_state->player, current_state->enemy1,
                   TYPE_BULLET_PLAYER);
@@ -261,7 +498,8 @@ void on_key_press(char key, key_event_type_t type, double held_time,
 void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
                                void *aux, double force_const) {
   state_t *current_state = (state_t *)aux;
-  if (current_state->current_status == GAME_OVER_WATER) {
+  if (current_state->current_status == GAME_OVER_WATER ||
+      current_state->current_status == GAME_OVER_PLAYER_DEAD) {
     body_remove(bullet);
     return;
   }
@@ -280,9 +518,6 @@ void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
   printf("Character ID %d HP is now %.1f/%.1f\n", target_char_info->id,
          target_char_info->current_hp, target_char_info->max_hp);
 
-  // The HP bar body is removed/recreated in the main loop for stability
-  // Here we just set the flags and velocity for knockback
-
   target_char_info->affected_by_gravity = true;
   target_char_info->is_knocked_back = true;
   vector_t bullet_vel = body_get_velocity(bullet);
@@ -290,14 +525,20 @@ void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
   body_set_velocity(target, (vector_t){knock_dir_x * KNOCKBACK_BASE_VELOCITY_X,
                                        KNOCKBACK_BASE_VELOCITY_Y});
 
-  // Change turn logic
-  body_type_t bullet_type = ((character_info_t *)body_get_info(bullet))->type;
-  if (bullet_type == TYPE_BULLET_PLAYER)
-    current_state->current_status = ENEMY1_FIRING;
-  else if (bullet_type == TYPE_BULLET_ENEMY1)
-    current_state->current_status = ENEMY2_FIRING;
-  else if (bullet_type == TYPE_BULLET_ENEMY2)
-    current_state->current_status = WAITING_FOR_PLAYER_SHOT;
+  check_game_over(current_state);
+  
+  // if game not over
+  if (current_state->current_status != GAME_OVER_PLAYER_DEAD &&
+      current_state->current_status != GAME_OVER_WATER){
+    current_state->next_turn_after_delay = get_next_turn(current_state->current_turn, 
+                                                        current_state->player,
+                                                        current_state->enemy1, 
+                                                        current_state->enemy2);
+    
+    current_state->current_status = SHOT_DELAY;
+    current_state->shot_delay_timer = SHOT_DELAY_TIME;
+    printf("Starting 1-second delay before next turn...\n");
+  }
 
   body_remove(bullet);
 }
@@ -307,7 +548,8 @@ void character_hit_water_handler(body_t *character, body_t *water,
   state_t *current_state = (state_t *)aux;
   character_info_t *char_info = (character_info_t *)body_get_info(character);
 
-  if (!char_info || current_state->current_status == GAME_OVER_WATER)
+  if (!char_info || current_state->current_status == GAME_OVER_WATER ||
+      current_state->current_status == GAME_OVER_PLAYER_DEAD)
     return;
 
   color_t current_color = body_get_color(character);
@@ -317,10 +559,11 @@ void character_hit_water_handler(body_t *character, body_t *water,
     printf("Character ID %d touched water.\n", char_info->id);
     body_set_color(character, WATER_DEATH_COLOR);
     body_set_velocity(character, VEC_ZERO);
+    char_info->died_from_water = true;
     char_info->affected_by_gravity = false;
     char_info->is_knocked_back = false;
     current_state->current_status = GAME_OVER_WATER;
-    printf("Game Over! Character ID %d fell into the water.\n", char_info->id);
+    current_state->game_over_message_printed = false;
   }
 }
 
@@ -347,7 +590,8 @@ void character_platform_contact_handler(body_t *character, body_t *platform,
                                         vector_t axis, void *aux,
                                         double force_const) {
   state_t *current_state = (state_t *)aux;
-  if (current_state->current_status == GAME_OVER_WATER)
+  if (current_state->current_status == GAME_OVER_WATER ||
+      current_state->current_status == GAME_OVER_PLAYER_DEAD)
     return;
 
   character_info_t *char_info = (character_info_t *)body_get_info(character);
@@ -392,7 +636,14 @@ state_t *emscripten_init() {
 
   current_state->scene = scene_init();
   current_state->current_status = WAITING_FOR_PLAYER_SHOT;
+  current_state->current_turn = TURN_PLAYER;
+  current_state->shot_delay_timer = 0.0;
+  current_state->next_turn_after_delay = TURN_PLAYER;
+  current_state->game_over_message_printed = false;
   current_state->all_characters = list_init(3, NULL);
+
+  // Initialize audio system
+  init_audio_system(current_state);
 
   asset_make_image(BACKGROUND_PATH, (SDL_Rect){0, 0, (int)MAX_SCREEN_COORDS.x,
                                                (int)MAX_SCREEN_COORDS.y});
@@ -507,13 +758,43 @@ void update_and_draw_hp_bars(state_t *state) {
 bool emscripten_main(state_t *current_state) {
   double dt = time_since_last_tick();
 
-  if (current_state->current_status != GAME_OVER_WATER) {
-    if (current_state->current_status == ENEMY1_FIRING) {
+  // check if game over
+  check_game_over(current_state);
+  
+  // update music
+  check_and_update_music(current_state);
+
+  if (current_state->current_status != GAME_OVER_WATER &&
+    current_state->current_status != GAME_OVER_PLAYER_DEAD &&
+    current_state->current_status != GAME_WON_PLAYER_WON){
+    // delay between shots
+    if (current_state->current_status == SHOT_DELAY) {
+      current_state->shot_delay_timer -= dt;
+      
+      if (current_state->shot_delay_timer <= 0.0) {
+        current_state->current_turn = current_state->next_turn_after_delay;
+        
+        if (current_state->current_turn == TURN_PLAYER) {
+          current_state->current_status = WAITING_FOR_PLAYER_SHOT;
+          printf("Player's turn to shoot!\n");
+        } else if (current_state->current_turn == TURN_ENEMY1) {
+          current_state->current_status = ENEMY1_FIRING;
+          printf("Enemy 1's turn to shoot!\n");
+        } else if (current_state->current_turn == TURN_ENEMY2) {
+          current_state->current_status = ENEMY2_FIRING;
+          printf("Enemy 2's turn to shoot!\n");
+        }
+      }
+    }
+    
+    if (current_state->current_turn == TURN_ENEMY1 && 
+        current_state->current_status == ENEMY1_FIRING) {
       printf("Enemy 1 firing.\n");
       fire_bullet(current_state, current_state->enemy1, current_state->player,
                   TYPE_BULLET_ENEMY1);
       current_state->current_status = ENEMY1_SHOT_ACTIVE;
-    } else if (current_state->current_status == ENEMY2_FIRING) {
+    } else if (current_state->current_turn == TURN_ENEMY2 && 
+               current_state->current_status == ENEMY2_FIRING) {
       printf("Enemy 2 firing.\n");
       fire_bullet(current_state, current_state->enemy2, current_state->player,
                   TYPE_BULLET_ENEMY2);
@@ -545,12 +826,28 @@ bool emscripten_main(state_t *current_state) {
   // This will now create temporary bodies for HP bars and draw them
   update_and_draw_hp_bars(current_state);
 
+  // Display game over message
+  if ((current_state->current_status == GAME_OVER_PLAYER_DEAD || 
+     current_state->current_status == GAME_OVER_WATER ||
+     current_state->current_status == GAME_WON_PLAYER_WON) && 
+    !current_state->game_over_message_printed){
+  if (current_state->current_status == GAME_OVER_PLAYER_DEAD) {
+    printf("GAME OVER - Player Lost!\n");
+  } else if (current_state->current_status == GAME_OVER_WATER) {
+    printf("GAME OVER - Player fell in the water!\n");
+  } else if (current_state->current_status == GAME_WON_PLAYER_WON) {
+    printf("VICTORY - Player Won! New Pirate King!\n");
+  }
+  current_state->game_over_message_printed = true;
+  }
+
   sdl_show();
 
   return false;
 }
 
 void emscripten_free(state_t *current_state) {
+  cleanup_audio_system(current_state);
   list_free(current_state->all_characters);
   scene_free(current_state->scene);
   asset_cache_destroy();
