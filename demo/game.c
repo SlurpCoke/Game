@@ -1,3 +1,4 @@
+#include <SDL2/SDL_mixer.h>
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
@@ -5,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <SDL2/SDL_mixer.h>
 
 #include "asset.h"
 #include "asset_cache.h"
@@ -89,11 +89,7 @@ typedef enum {
   TYPE_HP_BAR
 } body_type_t;
 
-typedef enum {
-  TURN_PLAYER,
-  TURN_ENEMY1,
-  TURN_ENEMY2
-} turn_order_t;
+typedef enum { TURN_PLAYER, TURN_ENEMY1, TURN_ENEMY2 } turn_order_t;
 
 typedef struct {
   body_type_t type;
@@ -102,7 +98,7 @@ typedef struct {
   int id;
   double current_hp;
   double max_hp;
-  bool died_from_water; 
+  bool died_from_water;
 } character_info_t;
 
 typedef enum {
@@ -163,204 +159,227 @@ bool is_character_alive(body_t *character);
 
 // initialize audio
 void init_audio_system(state_t *state) {
-    state->audio_initialized = false;
-    state->background_music = NULL;
-    state->low_hp_music = NULL;
-    state->is_low_hp_music_playing = false;
-    
-    // SDL mixer
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0){
-      return;
-    }
-    
-    // Background music
-    state->background_music = Mix_LoadMUS(BACKGROUND_MUSIC_PATH);
-    
-    // Load low HP music
-    state->low_hp_music = Mix_LoadMUS(LOW_HP_MUSIC_PATH);
+  state->audio_initialized = false;
+  state->background_music = NULL;
+  state->low_hp_music = NULL;
+  state->is_low_hp_music_playing = false;
 
-    state->audio_initialized = true;
-    
-    if (state->background_music){
-        if (Mix_PlayMusic(state->background_music, -1) == -1){
-            printf("Music Failed");
-        } else {
-            printf("Background music.\n");
-        }
+  // SDL mixer
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    return;
+  }
+
+  // Background music
+  state->background_music = Mix_LoadMUS(BACKGROUND_MUSIC_PATH);
+
+  // Load low HP music
+  state->low_hp_music = Mix_LoadMUS(LOW_HP_MUSIC_PATH);
+
+  state->audio_initialized = true;
+
+  if (state->background_music) {
+    if (Mix_PlayMusic(state->background_music, -1) == -1) {
+      printf("Music Failed");
+    } else {
+      printf("Background music.\n");
     }
+  }
 }
 
 // Free audio resources
 void cleanup_audio_system(state_t *state) {
-    if (!state->audio_initialized) return;
-    
-    // Stop all music
-    Mix_HaltMusic();
-    
-    // Free music resources
-    if (state->background_music){
-        Mix_FreeMusic(state->background_music);
-        state->background_music = NULL;
-    }
-    
-    if (state->low_hp_music){
-        Mix_FreeMusic(state->low_hp_music);
-        state->low_hp_music = NULL;
-    }
-    
-    // Close SDL_mixer
-    Mix_CloseAudio();
-    state->audio_initialized = false;
+  if (!state->audio_initialized)
+    return;
+
+  // Stop all music
+  Mix_HaltMusic();
+
+  // Free music resources
+  if (state->background_music) {
+    Mix_FreeMusic(state->background_music);
+    state->background_music = NULL;
+  }
+
+  if (state->low_hp_music) {
+    Mix_FreeMusic(state->low_hp_music);
+    state->low_hp_music = NULL;
+  }
+
+  // Close SDL_mixer
+  Mix_CloseAudio();
+  state->audio_initialized = false;
 }
 
 // check for low hp
 bool is_any_character_low_hp(state_t *state) {
-    character_info_t *player_info = (character_info_t *)body_get_info(state->player);
-    character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
-    character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
-    
-    bool player_alive = is_character_alive(state->player);
-    bool enemy1_alive = is_character_alive(state->enemy1);
-    bool enemy2_alive = is_character_alive(state->enemy2);
-    
-    // Check if any alive character has low HP
-    if (player_alive && player_info && player_info->current_hp <= LOW_HP_THRESHOLD){
-        return true;
-    }
-    if (enemy1_alive && enemy1_info && enemy1_info->current_hp <= LOW_HP_THRESHOLD){
-        return true;
-    }
-    if (enemy2_alive && enemy2_info && enemy2_info->current_hp <= LOW_HP_THRESHOLD){
-        return true;
-    }
-    return false;
+  character_info_t *player_info =
+      (character_info_t *)body_get_info(state->player);
+  character_info_t *enemy1_info =
+      (character_info_t *)body_get_info(state->enemy1);
+  character_info_t *enemy2_info =
+      (character_info_t *)body_get_info(state->enemy2);
+
+  bool player_alive = is_character_alive(state->player);
+  bool enemy1_alive = is_character_alive(state->enemy1);
+  bool enemy2_alive = is_character_alive(state->enemy2);
+
+  // Check if any alive character has low HP
+  if (player_alive && player_info &&
+      player_info->current_hp <= LOW_HP_THRESHOLD) {
+    return true;
+  }
+  if (enemy1_alive && enemy1_info &&
+      enemy1_info->current_hp <= LOW_HP_THRESHOLD) {
+    return true;
+  }
+  if (enemy2_alive && enemy2_info &&
+      enemy2_info->current_hp <= LOW_HP_THRESHOLD) {
+    return true;
+  }
+  return false;
 }
 
 // Update music
 void check_and_update_music(state_t *state) {
-    bool should_play_low_hp = is_any_character_low_hp(state);
-    // If low hp & music not playing
-    if (should_play_low_hp && !state->is_low_hp_music_playing){
-        if (state->low_hp_music) {
-            Mix_HaltMusic();
-            if (Mix_PlayMusic(state->low_hp_music, -1) == -1) {
-                printf("Music Failed");
-            } else {
-                printf("Low HP music.\n");
-                state->is_low_hp_music_playing = true;
-            }
-        }
+  bool should_play_low_hp = is_any_character_low_hp(state);
+  // If low hp & music not playing
+  if (should_play_low_hp && !state->is_low_hp_music_playing) {
+    if (state->low_hp_music) {
+      Mix_HaltMusic();
+      if (Mix_PlayMusic(state->low_hp_music, -1) == -1) {
+        printf("Music Failed");
+      } else {
+        printf("Low HP music.\n");
+        state->is_low_hp_music_playing = true;
+      }
     }
+  }
 }
 
 // check if alive hp
 bool is_character_alive(body_t *character) {
-    if (!character || body_is_removed(character)){
-        return false;
-    }
-    
-    character_info_t *info = (character_info_t *)body_get_info(character);
-    if (!info || info->current_hp <= 0 || info->died_from_water){
-        return false;
-    }
-    
-    return true;
+  if (!character || body_is_removed(character)) {
+    return false;
+  }
+
+  character_info_t *info = (character_info_t *)body_get_info(character);
+  if (!info || info->current_hp <= 0 || info->died_from_water) {
+    return false;
+  }
+
+  return true;
 }
 
 // check for game conditions
 void check_game_over(state_t *state) {
-    if (state->current_status == GAME_OVER_WATER || 
-        state->current_status == GAME_OVER_PLAYER_DEAD ||
-        state->current_status == GAME_WON_PLAYER_WON){
-        return;
-    }
-    
-    bool player_alive = is_character_alive(state->player);
-    bool enemy1_alive = is_character_alive(state->enemy1);
-    bool enemy2_alive = is_character_alive(state->enemy2);
+  if (state->current_status == GAME_OVER_WATER ||
+      state->current_status == GAME_OVER_PLAYER_DEAD ||
+      state->current_status == GAME_WON_PLAYER_WON) {
+    return;
+  }
 
-    // Check if player lost
-    if (!player_alive){
-        state->current_status = GAME_OVER_PLAYER_DEAD;
-        state->game_over_message_printed = false;
-        
-        // Stop movement
-        body_set_velocity(state->player, VEC_ZERO);
-        body_set_velocity(state->enemy1, VEC_ZERO);
-        body_set_velocity(state->enemy2, VEC_ZERO);
-        
-        character_info_t *player_info = (character_info_t *)body_get_info(state->player);
-        character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
-        character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
-        
-        if (player_info){
-            player_info->affected_by_gravity = false;
-            player_info->is_knocked_back = false;
-        }
-        if (enemy1_info){
-            enemy1_info->affected_by_gravity = false;
-            enemy1_info->is_knocked_back = false;
-        }
-        if (enemy2_info){
-            enemy2_info->affected_by_gravity = false;
-            enemy2_info->is_knocked_back = false;
-        }
+  bool player_alive = is_character_alive(state->player);
+  bool enemy1_alive = is_character_alive(state->enemy1);
+  bool enemy2_alive = is_character_alive(state->enemy2);
+
+  // Check if player lost
+  if (!player_alive) {
+    state->current_status = GAME_OVER_PLAYER_DEAD;
+    state->game_over_message_printed = false;
+
+    // Stop movement
+    body_set_velocity(state->player, VEC_ZERO);
+    body_set_velocity(state->enemy1, VEC_ZERO);
+    body_set_velocity(state->enemy2, VEC_ZERO);
+
+    character_info_t *player_info =
+        (character_info_t *)body_get_info(state->player);
+    character_info_t *enemy1_info =
+        (character_info_t *)body_get_info(state->enemy1);
+    character_info_t *enemy2_info =
+        (character_info_t *)body_get_info(state->enemy2);
+
+    if (player_info) {
+      player_info->affected_by_gravity = false;
+      player_info->is_knocked_back = false;
     }
-    // Check if player won
-    else if (player_alive && !enemy1_alive && !enemy2_alive){
-        state->current_status = GAME_WON_PLAYER_WON;
-        state->game_over_message_printed = false;
-        
-        // Stop movement
-        body_set_velocity(state->player, VEC_ZERO);
-        body_set_velocity(state->enemy1, VEC_ZERO);
-        body_set_velocity(state->enemy2, VEC_ZERO);
-        
-        character_info_t *player_info = (character_info_t *)body_get_info(state->player);
-        character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
-        character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
-        
-        if (player_info){
-            player_info->affected_by_gravity = false;
-            player_info->is_knocked_back = false;
-        }
-        if (enemy1_info){
-            enemy1_info->affected_by_gravity = false;
-            enemy1_info->is_knocked_back = false;
-        }
-        if (enemy2_info){
-            enemy2_info->affected_by_gravity = false;
-            enemy2_info->is_knocked_back = false;
-        }
+    if (enemy1_info) {
+      enemy1_info->affected_by_gravity = false;
+      enemy1_info->is_knocked_back = false;
     }
+    if (enemy2_info) {
+      enemy2_info->affected_by_gravity = false;
+      enemy2_info->is_knocked_back = false;
+    }
+  }
+  // Check if player won
+  else if (player_alive && !enemy1_alive && !enemy2_alive) {
+    state->current_status = GAME_WON_PLAYER_WON;
+    state->game_over_message_printed = false;
+
+    // Stop movement
+    body_set_velocity(state->player, VEC_ZERO);
+    body_set_velocity(state->enemy1, VEC_ZERO);
+    body_set_velocity(state->enemy2, VEC_ZERO);
+
+    character_info_t *player_info =
+        (character_info_t *)body_get_info(state->player);
+    character_info_t *enemy1_info =
+        (character_info_t *)body_get_info(state->enemy1);
+    character_info_t *enemy2_info =
+        (character_info_t *)body_get_info(state->enemy2);
+
+    if (player_info) {
+      player_info->affected_by_gravity = false;
+      player_info->is_knocked_back = false;
+    }
+    if (enemy1_info) {
+      enemy1_info->affected_by_gravity = false;
+      enemy1_info->is_knocked_back = false;
+    }
+    if (enemy2_info) {
+      enemy2_info->affected_by_gravity = false;
+      enemy2_info->is_knocked_back = false;
+    }
+  }
 }
 
 // calculates turn order player -> enemy
-turn_order_t get_next_turn(turn_order_t last_turn, body_t *player, body_t *enemy1, body_t *enemy2) {
-    bool player_alive = is_character_alive(player);
-    bool enemy1_alive = is_character_alive(enemy1);
-    bool enemy2_alive = is_character_alive(enemy2);
-    
-    // cycle through, skipping dead characters
-    switch (last_turn){
-        case TURN_PLAYER:
-            if (enemy1_alive) return TURN_ENEMY1;
-            else if (enemy2_alive) return TURN_ENEMY2;
-            else if (player_alive) return TURN_PLAYER;
-            break;
-        case TURN_ENEMY1:
-            if (enemy2_alive) return TURN_ENEMY2;
-            else if (player_alive) return TURN_PLAYER;
-            else if (enemy1_alive) return TURN_ENEMY1;
-            break;
-        case TURN_ENEMY2:
-            if (player_alive) return TURN_PLAYER;
-            else if (enemy1_alive) return TURN_ENEMY1;
-            else if (enemy2_alive) return TURN_ENEMY2;
-            break;
-    }
-    
-    return TURN_PLAYER; 
+turn_order_t get_next_turn(turn_order_t last_turn, body_t *player,
+                           body_t *enemy1, body_t *enemy2) {
+  bool player_alive = is_character_alive(player);
+  bool enemy1_alive = is_character_alive(enemy1);
+  bool enemy2_alive = is_character_alive(enemy2);
+
+  // cycle through, skipping dead characters
+  switch (last_turn) {
+  case TURN_PLAYER:
+    if (enemy1_alive)
+      return TURN_ENEMY1;
+    else if (enemy2_alive)
+      return TURN_ENEMY2;
+    else if (player_alive)
+      return TURN_PLAYER;
+    break;
+  case TURN_ENEMY1:
+    if (enemy2_alive)
+      return TURN_ENEMY2;
+    else if (player_alive)
+      return TURN_PLAYER;
+    else if (enemy1_alive)
+      return TURN_ENEMY1;
+    break;
+  case TURN_ENEMY2:
+    if (player_alive)
+      return TURN_PLAYER;
+    else if (enemy1_alive)
+      return TURN_ENEMY1;
+    else if (enemy2_alive)
+      return TURN_ENEMY2;
+    break;
+  }
+
+  return TURN_PLAYER;
 }
 
 body_t *make_generic_rectangle_body(vector_t center, double width,
@@ -481,8 +500,7 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
 
 void on_key_press(char key, key_event_type_t type, double held_time,
                   state_t *current_state) {
-  if (type == KEY_PRESSED && 
-      current_state->current_status != GAME_OVER_WATER &&
+  if (type == KEY_PRESSED && current_state->current_status != GAME_OVER_WATER &&
       current_state->current_status != GAME_OVER_PLAYER_DEAD) {
     if (key == SPACE_BAR &&
         current_state->current_status == WAITING_FOR_PLAYER_SHOT &&
@@ -526,15 +544,14 @@ void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
                                        KNOCKBACK_BASE_VELOCITY_Y});
 
   check_game_over(current_state);
-  
+
   // if game not over
   if (current_state->current_status != GAME_OVER_PLAYER_DEAD &&
-      current_state->current_status != GAME_OVER_WATER){
-    current_state->next_turn_after_delay = get_next_turn(current_state->current_turn, 
-                                                        current_state->player,
-                                                        current_state->enemy1, 
-                                                        current_state->enemy2);
-    
+      current_state->current_status != GAME_OVER_WATER) {
+    current_state->next_turn_after_delay =
+        get_next_turn(current_state->current_turn, current_state->player,
+                      current_state->enemy1, current_state->enemy2);
+
     current_state->current_status = SHOT_DELAY;
     current_state->shot_delay_timer = SHOT_DELAY_TIME;
     printf("Starting 1-second delay before next turn...\n");
@@ -760,20 +777,20 @@ bool emscripten_main(state_t *current_state) {
 
   // check if game over
   check_game_over(current_state);
-  
+
   // update music
   check_and_update_music(current_state);
 
   if (current_state->current_status != GAME_OVER_WATER &&
-    current_state->current_status != GAME_OVER_PLAYER_DEAD &&
-    current_state->current_status != GAME_WON_PLAYER_WON){
+      current_state->current_status != GAME_OVER_PLAYER_DEAD &&
+      current_state->current_status != GAME_WON_PLAYER_WON) {
     // delay between shots
     if (current_state->current_status == SHOT_DELAY) {
       current_state->shot_delay_timer -= dt;
-      
+
       if (current_state->shot_delay_timer <= 0.0) {
         current_state->current_turn = current_state->next_turn_after_delay;
-        
+
         if (current_state->current_turn == TURN_PLAYER) {
           current_state->current_status = WAITING_FOR_PLAYER_SHOT;
           printf("Player's turn to shoot!\n");
@@ -786,14 +803,14 @@ bool emscripten_main(state_t *current_state) {
         }
       }
     }
-    
-    if (current_state->current_turn == TURN_ENEMY1 && 
+
+    if (current_state->current_turn == TURN_ENEMY1 &&
         current_state->current_status == ENEMY1_FIRING) {
       printf("Enemy 1 firing.\n");
       fire_bullet(current_state, current_state->enemy1, current_state->player,
                   TYPE_BULLET_ENEMY1);
       current_state->current_status = ENEMY1_SHOT_ACTIVE;
-    } else if (current_state->current_turn == TURN_ENEMY2 && 
+    } else if (current_state->current_turn == TURN_ENEMY2 &&
                current_state->current_status == ENEMY2_FIRING) {
       printf("Enemy 2 firing.\n");
       fire_bullet(current_state, current_state->enemy2, current_state->player,
@@ -827,18 +844,18 @@ bool emscripten_main(state_t *current_state) {
   update_and_draw_hp_bars(current_state);
 
   // Display game over message
-  if ((current_state->current_status == GAME_OVER_PLAYER_DEAD || 
-     current_state->current_status == GAME_OVER_WATER ||
-     current_state->current_status == GAME_WON_PLAYER_WON) && 
-    !current_state->game_over_message_printed){
-  if (current_state->current_status == GAME_OVER_PLAYER_DEAD) {
-    printf("GAME OVER - Player Lost!\n");
-  } else if (current_state->current_status == GAME_OVER_WATER) {
-    printf("GAME OVER - Player fell in the water!\n");
-  } else if (current_state->current_status == GAME_WON_PLAYER_WON) {
-    printf("VICTORY - Player Won! New Pirate King!\n");
-  }
-  current_state->game_over_message_printed = true;
+  if ((current_state->current_status == GAME_OVER_PLAYER_DEAD ||
+       current_state->current_status == GAME_OVER_WATER ||
+       current_state->current_status == GAME_WON_PLAYER_WON) &&
+      !current_state->game_over_message_printed) {
+    if (current_state->current_status == GAME_OVER_PLAYER_DEAD) {
+      printf("GAME OVER - Player Lost!\n");
+    } else if (current_state->current_status == GAME_OVER_WATER) {
+      printf("GAME OVER - Player fell in the water!\n");
+    } else if (current_state->current_status == GAME_WON_PLAYER_WON) {
+      printf("VICTORY - Player Won! New Pirate King!\n");
+    }
+    current_state->game_over_message_printed = true;
   }
 
   sdl_show();
