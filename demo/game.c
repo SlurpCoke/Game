@@ -20,10 +20,24 @@
 #include "../include/state.h"
 #include "../include/vector.h"
 
-// Sizes and Positions
 const vector_t MIN_SCREEN_COORDS = {0, 0};
 const vector_t MAX_SCREEN_COORDS = {1000, 500};
 
+// Colors
+const color_t PLAYER1_COLOR = (color_t){0.0, 0.8, 0.0};
+const color_t PLAYER2_COLOR = (color_t){0.0, 0.6, 0.8};
+const color_t ENEMY1_COLOR = (color_t){0.8, 0.0, 0.0};
+const color_t ENEMY2_COLOR = (color_t){0.9, 0.4, 0.0};
+const color_t PLAYER_BULLET_COLOR = (color_t){0.9, 0.9, 0.2}; // Yellow
+const color_t ENEMY_BULLET_COLOR = (color_t){0.75, 0.75, 0.75}; // Silver
+const color_t WATER_COLOR = (color_t){0.2, 0.2, 0.8};
+const color_t PLATFORM_COLOR = (color_t){0.5, 0.5, 0.5};
+const color_t HP_BAR_BG_COLOR = (color_t){0.4, 0.0, 0.0};
+const color_t HP_BAR_FG_COLOR = (color_t){0.0, 1.0, 0.0};
+const color_t WATER_DEATH_COLOR = (color_t){0.1, 0.1, 0.1};
+const color_t WHITE = {1, 1, 1};
+
+// Sizes and Positions
 const double PLATFORM_WIDTH = 150.0;
 const double PLATFORM_HEIGHT = 20.0;
 const double CHARACTER_SIZE = 80.0;
@@ -36,74 +50,25 @@ const double HP_BAR_HEIGHT = 5.0;
 const double HP_BAR_Y_OFFSET = 25.0;
 const size_t CIRC_NPOINTS = 20;
 
-// Colors
-const color_t PLAYER1_COLOR = (color_t){0.0, 0.8, 0.0};
-const color_t PLAYER2_COLOR = (color_t){0.0, 0.6, 0.8};
-const color_t ENEMY1_COLOR = (color_t){0.8, 0.0, 0.0};
-const color_t ENEMY2_COLOR = (color_t){0.9, 0.4, 0.0};
-const color_t BULLET_COLOR = (color_t){0.9, 0.9, 0.2};
-const color_t WATER_COLOR = (color_t){0.2, 0.2, 0.8};
-const color_t PLATFORM_COLOR = (color_t){0.5, 0.5, 0.5};
-const color_t HP_BAR_BG_COLOR = (color_t){0.4, 0.0, 0.0};
-const color_t HP_BAR_FG_COLOR = (color_t){0.0, 1.0, 0.0};
-const color_t WATER_DEATH_COLOR = (color_t){0.1, 0.1, 0.1};
-const color_t WHITE = {1, 1, 1};
+const double PLATFORM_Y =
+    WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + PLATFORM_HEIGHT / 2.0;
+const vector_t PLATFORM_L_POS = {150, PLATFORM_Y};
+const vector_t PLATFORM_R_POS = {MAX_SCREEN_COORDS.x - 150, PLATFORM_Y};
 
-// Physics & Game Constants
-const double BULLET_VELOCITY = 250.0; // per axis
-const double GRAVITY_ACCELERATION = 250.0;
-const double KNOCKBACK_BASE_VELOCITY_X = 40.0;
-const double KNOCKBACK_BASE_VELOCITY_Y = 100.0;
-const double MAX_HEALTH = 100.0;
-const double SHOT_DELAY_TIME = 1.0;
-const double LOW_HP_THRESHOLD = 50.0;
-const double BULLET_WEIGHT = 5;
-
-// Automatic Level Generation
-const vector_t PLATFORM_WIDTH_RANGE = {100.0, 300.0};
-const double PLATFORM_LEVEL_CHANCE = 0.5;
-const vector_t PLATFORM_Y_DELTA = {20.0, 50.0};
-
-const double CHARACTER_MIN_DIST = 200.0;
-
-struct level_info {
-  double platform_width;
-  double platform_height;
-  double platform_y;
-  vector_t platform_l_pos;
-  vector_t platform_r_pos;
-
-  vector_t player1_start_pos;
-  vector_t player2_start_pos;
-  vector_t enemy1_start_pos;
-  vector_t enemy2_start_pos;
-};
-
-struct level_info *build_level();
-
-/* const double PLATFORM_Y = */
-/*     WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + PLATFORM_HEIGHT / 2.0; */
-/* const vector_t PLATFORM_L_POS = {PLATFORM_WIDTH, PLATFORM_Y}; */
-/* const vector_t PLATFORM_R_POS = {MAX_SCREEN_COORDS.x - 150, PLATFORM_Y}; */
-
-/* // Player positions */
-/* const vector_t PLAYER1_START_POS = {PLATFORM_L_POS.x, */
-/*                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0
- * + */
-/*                                         CHARACTER_SIZE / 2.0 + 0.1}; */
-/* const vector_t PLAYER2_START_POS = {PLATFORM_L_POS.x + 40, */
-/*                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0
- * + */
-/*                                         CHARACTER_SIZE / 2.0 + 0.1}; */
-/* // Enemy positions */
-/* const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - 40, */
-/*                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
- */
-/*                                        CHARACTER_SIZE / 2.0 + 0.1}; */
-/* const vector_t ENEMY2_START_POS = {PLATFORM_R_POS.x + 40, */
-/*                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
- */
-/*                                        CHARACTER_SIZE / 2.0 + 0.1}; */
+// Player positions
+const vector_t PLAYER1_START_POS = {PLATFORM_L_POS.x - 40,
+                                    PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 +
+                                        CHARACTER_SIZE / 2.0 + 0.1};
+const vector_t PLAYER2_START_POS = {PLATFORM_L_POS.x + 40,
+                                    PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 +
+                                        CHARACTER_SIZE / 2.0 + 0.1};
+// Enemy positions
+const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - 40,
+                                   PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
+                                       CHARACTER_SIZE / 2.0 + 0.1};
+const vector_t ENEMY2_START_POS = {PLATFORM_R_POS.x + 40,
+                                   PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
+                                       CHARACTER_SIZE / 2.0 + 0.1};
 
 // Visualization
 const size_t N_DOTS = 20;
@@ -114,11 +79,22 @@ const double MOUSE_SCALE = 1.5;
 // Audio File Paths
 const char *BACKGROUND_MUSIC_PATH = "assets/calm_pirate.wav";
 const char *LOW_HP_MUSIC_PATH = "assets/pirate_music.wav";
+const char *HIT_SOUND_PATH = "assets/hit.wav";
 
 // PNG File Paths
 const char *PLAYER1_PATH = "assets/player_1.png";
 const char *PLAYER2_PATH = "assets/player_1.png";
 const char *ENEMY_PATH = "assets/enemy.png";
+
+// Physics & Game Constants
+const double BULLET_VELOCITY = 250.0; // per axis
+const double GRAVITY_ACCELERATION = 250.0;
+const double KNOCKBACK_BASE_VELOCITY_X = 40.0;
+const double KNOCKBACK_BASE_VELOCITY_Y = 100.0;
+const double MAX_HEALTH = 100.0;
+const double SHOT_DELAY_TIME = 1.0;
+const double LOW_HP_THRESHOLD = 50.0;
+const double BULLET_WEIGHT = 5;
 
 const char *BACKGROUND_PATH = "assets/frogger-background.png";
 
@@ -190,11 +166,11 @@ struct state {
   bool game_over_message_printed;
   Mix_Music *background_music;
   Mix_Music *low_hp_music;
+  Mix_Chunk *hit_sound;
   bool is_low_hp_music_playing;
   bool audio_initialized;
   game_mode_t game_mode;
   bool game_mode_selected;
-
   bool mouse_down;
   int mouse_x;
   int mouse_y;
@@ -216,69 +192,7 @@ void cleanup_audio_system(state_t *state);
 void check_and_update_music(state_t *state);
 bool is_any_character_low_hp(state_t *state);
 bool is_character_alive(body_t *character);
-
-
-double random_range(vector_t rng) {
-  double range = rng.y - rng.x;
-  double d = RAND_MAX / range;
-  return (rand() / d) + rng.x;
-}
-
-bool random_prob(double prob) {
-  long int r = random();
-  double threshold = prob * RAND_MAX;
-  return r < threshold;
-}
-
-struct level_info *build_level() {
-  struct level_info *level = malloc(sizeof(struct level_info));
-  level->platform_width = random_range(PLATFORM_WIDTH_RANGE);
-
-  if (random_prob(PLATFORM_LEVEL_CHANCE)) {
-    level->platform_height = PLATFORM_Y_DELTA.x;
-  } else {
-    level->platform_height = random_range(PLATFORM_Y_DELTA);
-  }
-
-  level->platform_y =
-      WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + level->platform_height / 2.0;
-  level->platform_l_pos = (vector_t){level->platform_width, level->platform_y};
-  level->platform_r_pos = (vector_t){
-      MAX_SCREEN_COORDS.x - level->platform_width, level->platform_y};
-
-  do {
-    level->player1_start_pos =
-        (vector_t){random_range((vector_t){
-                       level->platform_l_pos.x - level->platform_width / 2,
-                       level->platform_l_pos.x + level->platform_width / 2}),
-                   level->platform_l_pos.y + level->platform_height / 2.0 +
-                       CHARACTER_SIZE / 2.0 + 0.1};
-    level->player2_start_pos =
-        (vector_t){random_range((vector_t){
-                       level->platform_l_pos.x - level->platform_width / 2,
-                       level->platform_l_pos.x + level->platform_width / 2}),
-                   level->platform_l_pos.y + level->platform_height / 2.0 +
-                       CHARACTER_SIZE / 2.0 + 0.1};
-  } while (fabs(level->player1_start_pos.x - level->player2_start_pos.x) >=
-           CHARACTER_MIN_DIST);
-
-  do {
-    level->enemy1_start_pos =
-        (vector_t){random_range((vector_t){
-                       level->platform_r_pos.x - level->platform_width / 2,
-                       level->platform_r_pos.x + level->platform_width / 2}),
-                   level->platform_r_pos.y + level->platform_height / 2.0 +
-                       CHARACTER_SIZE / 2.0 + 0.1};
-    level->enemy2_start_pos =
-        (vector_t){random_range((vector_t){
-                       level->platform_r_pos.x - level->platform_width / 2,
-                       level->platform_r_pos.x + level->platform_width / 2}),
-                   level->platform_r_pos.y + level->platform_height / 2.0 +
-                       CHARACTER_SIZE / 2.0 + 0.1};
-  } while (fabs(level->enemy1_start_pos.x - level->enemy2_start_pos.x) >=
-           CHARACTER_MIN_DIST);
-
-  return level;
+void select_game_mode(state_t *state);
 
 // ask user for game mode
 void select_game_mode(state_t *state) {
@@ -294,24 +208,38 @@ void init_audio_system(state_t *state) {
   state->audio_initialized = false;
   state->background_music = NULL;
   state->low_hp_music = NULL;
+  state->hit_sound = NULL;
   state->is_low_hp_music_playing = false;
 
-  // SDL mixer
+  // Open the audio device
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    printf("Mix_OpenAudio: %s\n", Mix_GetError());
     return;
   }
 
   // Background music
   state->background_music = Mix_LoadMUS(BACKGROUND_MUSIC_PATH);
+  if (!state->background_music) {
+      printf("Mix_LoadMUS(\"%s\"): %s\n", BACKGROUND_MUSIC_PATH, Mix_GetError());
+  }
 
   // Load low HP music
   state->low_hp_music = Mix_LoadMUS(LOW_HP_MUSIC_PATH);
+  if (!state->low_hp_music) {
+      printf("Mix_LoadMUS(\"%s\"): %s\n", LOW_HP_MUSIC_PATH, Mix_GetError());
+  }
+
+  // Load hit sound effect
+  state->hit_sound = Mix_LoadWAV(HIT_SOUND_PATH);
+  if (!state->hit_sound) {
+      printf("Mix_LoadWAV(\"%s\"): %s\n", HIT_SOUND_PATH, Mix_GetError());
+  }
 
   state->audio_initialized = true;
 
   if (state->background_music) {
     if (Mix_PlayMusic(state->background_music, -1) == -1) {
-      printf("Music Failed");
+      printf("Music Failed to play: %s", Mix_GetError());
     } else {
       printf("Background music.\n");
     }
@@ -337,8 +265,15 @@ void cleanup_audio_system(state_t *state) {
     state->low_hp_music = NULL;
   }
 
+  // Free sound effect resources
+  if (state->hit_sound) {
+      Mix_FreeChunk(state->hit_sound);
+      state->hit_sound = NULL;
+  }
+
   // Close SDL_mixer
   Mix_CloseAudio();
+
   state->audio_initialized = false;
 }
 
@@ -623,19 +558,15 @@ body_t *make_character_body(vector_t center, double size, color_t color,
 body_t *make_projectile_body(vector_t center, double width, double height,
                              color_t color, body_type_t type, int shooter_id,
                              double mass) {
-  list_t *shape = list_init(4, free);
-  vector_t *v1 = malloc(sizeof(vector_t));
-  *v1 = (vector_t){-width / 2, -height / 2};
-  list_add(shape, v1);
-  vector_t *v2 = malloc(sizeof(vector_t));
-  *v2 = (vector_t){+width / 2, -height / 2};
-  list_add(shape, v2);
-  vector_t *v3 = malloc(sizeof(vector_t));
-  *v3 = (vector_t){+width / 2, +height / 2};
-  list_add(shape, v3);
-  vector_t *v4 = malloc(sizeof(vector_t));
-  *v4 = (vector_t){-width / 2, +height / 2};
-  list_add(shape, v4);
+  double radius = width / 2.0;
+  list_t *shape = list_init(CIRC_NPOINTS, free);
+  for (size_t i = 0; i < CIRC_NPOINTS; i++) {
+    double angle = 2 * M_PI * i / CIRC_NPOINTS;
+    vector_t *v = malloc(sizeof(vector_t));
+    assert(v != NULL);
+    *v = (vector_t){radius * cos(angle), radius * sin(angle)};
+    list_add(shape, v);
+  }
 
   character_info_t *info = malloc(sizeof(character_info_t));
   info->type = type;
@@ -681,8 +612,15 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
       (vector_t){dir_x * (CHARACTER_SIZE / 2.0 + BULLET_WIDTH / 2.0 + 5.0), 0});
   vector_t bullet_velocity = {dir_x * BULLET_VELOCITY, 0};
 
+  color_t bullet_color;
+  if (bullet_tag == TYPE_BULLET_PLAYER1 || bullet_tag == TYPE_BULLET_PLAYER2) {
+    bullet_color = PLAYER_BULLET_COLOR;
+  } else {
+    bullet_color = ENEMY_BULLET_COLOR;
+  }
+
   body_t *bullet = make_projectile_body(
-      bullet_start_pos, BULLET_WIDTH, BULLET_HEIGHT, BULLET_COLOR, bullet_tag,
+      bullet_start_pos, BULLET_WIDTH, BULLET_HEIGHT, bullet_color, bullet_tag,
       shooter_info ? shooter_info->id : -1, 1.0);
   body_set_velocity(bullet, bullet_velocity);
   scene_add_body(current_state->scene, bullet);
@@ -706,70 +644,70 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
 
 void on_key_press(char key, key_event_type_t type, double held_time,
                   state_t *current_state) {
-  if (type == KEY_PRESSED) {
-    // Game mode selection
-    if (current_state->current_status == GAME_MODE_SELECTION) {
-      if (key == '1') {
-        current_state->game_mode = GAME_MODE_1_EASY;
-        current_state->game_mode_selected = true;
-        current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
-        printf("\nRookie Mode Selected.\n");
-        printf("Player 1's turn to shoot! (Press SPACE)\n");
-      } else if (key == '2') {
-        current_state->game_mode = GAME_MODE_2_HARD;
-        current_state->game_mode_selected = true;
-        current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
-        printf("\nPirate King Mode selected!\n");
-        printf("Player 1's turn to shoot! (Press SPACE)\n");
-      }
-      return;
+    if (type == KEY_PRESSED) {
+        // Game mode selection
+        if (current_state->current_status == GAME_MODE_SELECTION) {
+            if (key == '1') {
+                current_state->game_mode = GAME_MODE_1_EASY;
+                current_state->game_mode_selected = true;
+                current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
+                printf("\nRookie Mode Selected.\n");
+                printf("Player 1's turn to shoot! (Press SPACE)\n");
+            } else if (key == '2') {
+                current_state->game_mode = GAME_MODE_2_HARD;
+                current_state->game_mode_selected = true;
+                current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
+                printf("\nPirate King Mode selected!\n");
+                printf("Player 1's turn to shoot! (Press SPACE)\n");
+            }
+            return;
+        }
+
+        if (current_state->game_mode_selected && current_state->current_status != GAME_OVER_WATER &&
+            current_state->current_status != GAME_WON_PLAYERS_WON &&
+            current_state->current_status != GAME_OVER_ENEMIES_WON) {
+
+            // Player 1 shoots (Space)
+            if (key == SPACE_BAR &&
+                current_state->current_status == WAITING_FOR_PLAYER1_SHOT &&
+                current_state->current_turn == TURN_PLAYER1) {
+                printf("Player 1 firing.\n");
+                body_t *target = NULL;
+                if (is_character_alive(current_state->enemy1)) {
+                    target = current_state->enemy1;
+                } else if (is_character_alive(current_state->enemy2)) {
+                    target = current_state->enemy2;
+                }
+
+                if (target) {
+                    fire_bullet(current_state, current_state->player1, target,
+                                TYPE_BULLET_PLAYER1);
+                    current_state->current_status = PLAYER1_SHOT_ACTIVE;
+                }
+            }
+
+            // Player 2 shoots (Enter)
+            else if (key == '\r' &&
+                     current_state->current_status == WAITING_FOR_PLAYER2_SHOT &&
+                     current_state->current_turn == TURN_PLAYER2) {
+                printf("Player 2 firing.\n");
+                body_t *target = NULL;
+                if (is_character_alive(current_state->enemy1)) {
+                    target = current_state->enemy1;
+                } else if (is_character_alive(current_state->enemy2)) {
+                    target = current_state->enemy2;
+                }
+
+                if (target) {
+                    fire_bullet(current_state, current_state->player2, target,
+                                TYPE_BULLET_PLAYER2);
+                    current_state->current_status = PLAYER2_SHOT_ACTIVE;
+                }
+            }
+        }
     }
-
-    if (current_state->game_mode_selected &&
-        current_state->current_status != GAME_OVER_WATER &&
-        current_state->current_status != GAME_WON_PLAYERS_WON &&
-        current_state->current_status != GAME_OVER_ENEMIES_WON) {
-
-      // Player 1 shoots (Space)
-      if (key == SPACE_BAR &&
-          current_state->current_status == WAITING_FOR_PLAYER1_SHOT &&
-          current_state->current_turn == TURN_PLAYER1) {
-        printf("Player 1 firing.\n");
-        body_t *target = NULL;
-        if (is_character_alive(current_state->enemy1)) {
-          target = current_state->enemy1;
-        } else if (is_character_alive(current_state->enemy2)) {
-          target = current_state->enemy2;
-        }
-
-        if (target) {
-          fire_bullet(current_state, current_state->player1, target,
-                      TYPE_BULLET_PLAYER1);
-          current_state->current_status = PLAYER1_SHOT_ACTIVE;
-        }
-      }
-
-      // Player 2 shoots (Enter)
-      else if (key == '\r' &&
-               current_state->current_status == WAITING_FOR_PLAYER2_SHOT &&
-               current_state->current_turn == TURN_PLAYER2) {
-        printf("Player 2 firing.\n");
-        body_t *target = NULL;
-        if (is_character_alive(current_state->enemy1)) {
-          target = current_state->enemy1;
-        } else if (is_character_alive(current_state->enemy2)) {
-          target = current_state->enemy2;
-        }
-
-        if (target) {
-          fire_bullet(current_state, current_state->player2, target,
-                      TYPE_BULLET_PLAYER2);
-          current_state->current_status = PLAYER2_SHOT_ACTIVE;
-        }
-      }
-    }
-  }
 }
+
 
 void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
                                void *aux, double force_const) {
@@ -779,6 +717,11 @@ void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
       current_state->current_status == GAME_OVER_ENEMIES_WON) {
     body_remove(bullet);
     return;
+  }
+
+  // Play hit sound
+  if (current_state->hit_sound) {
+      Mix_PlayChannel(-1, current_state->hit_sound, 0);
   }
 
   character_info_t *target_char_info =
@@ -985,8 +928,6 @@ state_t *emscripten_init() {
   sdl_init(MIN_SCREEN_COORDS, MAX_SCREEN_COORDS);
   srand(time(NULL));
 
-  struct level_info *info = build_level();
-
   state_t *current_state = malloc(sizeof(state_t));
   assert(current_state != NULL);
 
@@ -1011,18 +952,17 @@ state_t *emscripten_init() {
       MAX_SCREEN_COORDS.x, WATER_HEIGHT, WATER_COLOR, TYPE_WATER, INFINITY);
   scene_add_body(current_state->scene, current_state->water_body);
   current_state->platform_l = make_generic_rectangle_body(
-      info->platform_l_pos, info->platform_width, info->platform_height,
-      PLATFORM_COLOR, TYPE_PLATFORM, INFINITY);
+      PLATFORM_L_POS, PLATFORM_WIDTH, PLATFORM_HEIGHT, PLATFORM_COLOR,
+      TYPE_PLATFORM, INFINITY);
   scene_add_body(current_state->scene, current_state->platform_l);
   current_state->platform_r = make_generic_rectangle_body(
-      info->platform_r_pos, info->platform_width, info->platform_height,
-      PLATFORM_COLOR, TYPE_PLATFORM, INFINITY);
+      PLATFORM_R_POS, PLATFORM_WIDTH, PLATFORM_HEIGHT, PLATFORM_COLOR,
+      TYPE_PLATFORM, INFINITY);
   scene_add_body(current_state->scene, current_state->platform_r);
 
   // Create Player 1
-  current_state->player1 =
-      make_character_body(info->player1_start_pos, CHARACTER_SIZE,
-                          PLAYER1_COLOR, TYPE_PLAYER1, 1, 10.0);
+  current_state->player1 = make_character_body(
+      PLAYER1_START_POS, CHARACTER_SIZE, PLAYER1_COLOR, TYPE_PLAYER1, 1, 10.0);
   asset_make_image_with_body(PLAYER1_PATH, current_state->player1);
   scene_add_body(current_state->scene, current_state->player1);
   list_add(current_state->all_characters, current_state->player1);
@@ -1034,9 +974,8 @@ state_t *emscripten_init() {
       character_platform_contact_handler, current_state, 0.0, NULL);
 
   // Create Player 2
-  current_state->player2 =
-      make_character_body(info->player2_start_pos, CHARACTER_SIZE,
-                          PLAYER2_COLOR, TYPE_PLAYER2, 2, 10.0);
+  current_state->player2 = make_character_body(
+      PLAYER2_START_POS, CHARACTER_SIZE, PLAYER2_COLOR, TYPE_PLAYER2, 2, 10.0);
   asset_make_image_with_body(PLAYER2_PATH, current_state->player2);
   scene_add_body(current_state->scene, current_state->player2);
   list_add(current_state->all_characters, current_state->player2);
@@ -1048,9 +987,8 @@ state_t *emscripten_init() {
       character_platform_contact_handler, current_state, 0.0, NULL);
 
   // Create Enemy 1
-  current_state->enemy1 =
-      make_character_body(info->enemy1_start_pos, CHARACTER_SIZE, ENEMY1_COLOR,
-                          TYPE_ENEMY1, 3, 10.0);
+  current_state->enemy1 = make_character_body(
+      ENEMY1_START_POS, CHARACTER_SIZE, ENEMY1_COLOR, TYPE_ENEMY1, 3, 10.0);
   asset_make_image_with_body(ENEMY_PATH, current_state->enemy1);
   scene_add_body(current_state->scene, current_state->enemy1);
   list_add(current_state->all_characters, current_state->enemy1);
@@ -1062,9 +1000,8 @@ state_t *emscripten_init() {
       character_platform_contact_handler, current_state, 0.0, NULL);
 
   // Create Enemy 2
-  current_state->enemy2 =
-      make_character_body(info->enemy2_start_pos, CHARACTER_SIZE, ENEMY2_COLOR,
-                          TYPE_ENEMY2, 4, 10.0);
+  current_state->enemy2 = make_character_body(
+      ENEMY2_START_POS, CHARACTER_SIZE, ENEMY2_COLOR, TYPE_ENEMY2, 4, 10.0);
   asset_make_image_with_body(ENEMY_PATH, current_state->enemy2);
   scene_add_body(current_state->scene, current_state->enemy2);
   list_add(current_state->all_characters, current_state->enemy2);
@@ -1208,17 +1145,16 @@ bool emscripten_main(state_t *current_state) {
   double dt = time_since_last_tick();
 
   if (current_state->current_status == GAME_MODE_SELECTION) {
-    sdl_clear();
-    list_t *assets = asset_get_asset_list();
-    for (size_t i = 0; i < list_size(assets); i++) {
-      asset_render(list_get(assets, i));
+        sdl_clear();
+        list_t *assets = asset_get_asset_list();
+        for (size_t i = 0; i < list_size(assets); i++) {
+            asset_render(list_get(assets, i));
+        }
+        sdl_show();
+        return false;
     }
-    sdl_show();
-    return false;
-  }
 
-  if (!current_state->game_mode_selected)
-    return false;
+    if (!current_state->game_mode_selected) return false;
 
   // check if game over
   check_game_over(current_state);
@@ -1327,6 +1263,7 @@ bool emscripten_main(state_t *current_state) {
 
   update_and_draw_hp_bars(current_state);
 
+  // Visualization
   if (current_state->game_mode == GAME_MODE_1_EASY &&
       (current_state->current_status == WAITING_FOR_PLAYER1_SHOT ||
        current_state->current_status == WAITING_FOR_PLAYER2_SHOT) &&
