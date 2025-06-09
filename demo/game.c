@@ -217,7 +217,6 @@ void check_and_update_music(state_t *state);
 bool is_any_character_low_hp(state_t *state);
 bool is_character_alive(body_t *character);
 
-
 double random_range(vector_t rng) {
   double range = rng.y - rng.x;
   double d = RAND_MAX / range;
@@ -671,19 +670,25 @@ body_t *choose_ai_target(state_t *state, body_t *shooter) {
 }
 
 vector_t calculate_projectile_arc(vector_t diff) {
-    /* vector_t diff = vec_subtract(tgt, src); */
-    printf("diff = %f, %f\n", diff.x, diff.y);
-    double arg = (GRAVITY_ACCELERATION * fabs(diff.x)/2) / (BULLET_VELOCITY * BULLET_VELOCITY);
-    printf("arg = %f\n", arg);
-    double theta = 0.5 * asin(arg);
-    /* double discriminant = pow(BULLET_VELOCITY, 4) - GRAVITY_ACCELERATION * (GRAVITY_ACCELERATION * pow(diff.x, 2) + 2 * diff.y * pow(BULLET_VELOCITY, 2)); */
-    /* double theta = atan(pow(BULLET_VELOCITY, 2) + sqrt(discriminant) / (GRAVITY_ACCELERATION * diff.x)); */
-   
-    return (vector_t){-BULLET_VELOCITY * cos(theta), BULLET_VELOCITY * sin(theta)};
+  /* vector_t diff = vec_subtract(tgt, src); */
+  printf("diff = %f, %f\n", diff.x, diff.y);
+  double arg = (GRAVITY_ACCELERATION * fabs(diff.x) / 2) /
+               (BULLET_VELOCITY * BULLET_VELOCITY);
+  printf("arg = %f\n", arg);
+  double theta = 0.5 * asin(arg);
+  /* double discriminant = pow(BULLET_VELOCITY, 4) - GRAVITY_ACCELERATION *
+   * (GRAVITY_ACCELERATION * pow(diff.x, 2) + 2 * diff.y * pow(BULLET_VELOCITY,
+   * 2)); */
+  /* double theta = atan(pow(BULLET_VELOCITY, 2) + sqrt(discriminant) /
+   * (GRAVITY_ACCELERATION * diff.x)); */
+
+  return (vector_t){-BULLET_VELOCITY * cos(theta),
+                    BULLET_VELOCITY * sin(theta)};
 }
 
 body_t *fire_bullet(state_t *current_state, body_t *shooter,
-                    body_t *target_to_aim_at, body_type_t bullet_tag, bool horizontal) {
+                    body_t *target_to_aim_at, body_type_t bullet_tag,
+                    bool horizontal) {
   vector_t shooter_pos = body_get_centroid(shooter);
   character_info_t *shooter_info = (character_info_t *)body_get_info(shooter);
   vector_t fire_direction =
@@ -695,9 +700,9 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
 
   vector_t bullet_velocity;
   if (horizontal) {
-      bullet_velocity = (vector_t){dir_x * BULLET_VELOCITY, 0};
+    bullet_velocity = (vector_t){dir_x * BULLET_VELOCITY, 0};
   } else {
-      bullet_velocity = calculate_projectile_arc(fire_direction);
+    bullet_velocity = calculate_projectile_arc(fire_direction);
   }
   printf("bullet velocity = (%f, %f)\n", bullet_velocity.x, bullet_velocity.y);
 
@@ -706,7 +711,8 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
       shooter_info ? shooter_info->id : -1, 1.0);
   body_set_velocity(bullet, bullet_velocity);
   if (!horizontal) {
-      body_add_force(bullet, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
+    body_add_force(bullet,
+                   (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
   }
   scene_add_body(current_state->scene, bullet);
 
@@ -999,8 +1005,7 @@ void mouse_handler(mouse_event_type_t type, int x, int y, state_t *state) {
     state->mouse_down = false;
     printf("Mouse up!\n");
     shoot_trajectory(state);
-  }
-break;
+  } break;
   default:
     break;
   }
@@ -1223,11 +1228,12 @@ void shoot_trajectory(state_t *state) {
 
   body_t *dot = make_visual_dots(body_get_centroid(player), DOT_RADIUS);
   body_set_velocity(dot, diff);
-  body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT * 50});
-    create_collision(state->scene, dot, state->enemy1,
-                     bullet_hit_target_handler, state, 0.0, NULL);
-    create_collision(state->scene, dot, state->enemy2,
-                     bullet_hit_target_handler, state, 0.0, NULL);
+  body_add_force(dot,
+                 (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT * 50});
+  create_collision(state->scene, dot, state->enemy1, bullet_hit_target_handler,
+                   state, 0.0, NULL);
+  create_collision(state->scene, dot, state->enemy2, bullet_hit_target_handler,
+                   state, 0.0, NULL);
   scene_add_body(state->scene, dot);
 }
 
