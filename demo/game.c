@@ -130,6 +130,7 @@ typedef struct {
 } character_info_t;
 
 typedef enum {
+  GAME_MODE_SELECTION,
   WAITING_FOR_PLAYER1_SHOT,
   PLAYER1_SHOT_ACTIVE,
   WAITING_FOR_PLAYER2_SHOT,
@@ -143,6 +144,8 @@ typedef enum {
   GAME_WON_PLAYERS_WON,
   GAME_OVER_ENEMIES_WON
 } game_status_t;
+
+typedef enum { GAME_MODE_1_EASY, GAME_MODE_2_HARD } game_mode_t;
 
 struct state {
   scene_t *scene;
@@ -163,6 +166,8 @@ struct state {
   Mix_Music *low_hp_music;
   bool is_low_hp_music_playing;
   bool audio_initialized;
+  game_mode_t game_mode;
+  bool game_mode_selected;
 
   bool mouse_down;
   int mouse_x;
@@ -185,6 +190,15 @@ void cleanup_audio_system(state_t *state);
 void check_and_update_music(state_t *state);
 bool is_any_character_low_hp(state_t *state);
 bool is_character_alive(body_t *character);
+
+// ask user for game mode
+void select_game_mode(state_t *state) {
+  printf("\nSelect Game mode\n");
+  printf("Choose your game mode:\n");
+  printf("1 - Rookie mode (with aiming cursor)\n");
+  printf("2 - Pirate King mode (no aiming cursor)\n");
+  printf("---------------------------------------\n");
+}
 
 // initialize audio
 void init_audio_system(state_t *state) {
@@ -603,45 +617,66 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
 
 void on_key_press(char key, key_event_type_t type, double held_time,
                   state_t *current_state) {
-  if (type == KEY_PRESSED && current_state->current_status != GAME_OVER_WATER &&
-      current_state->current_status != GAME_WON_PLAYERS_WON &&
-      current_state->current_status != GAME_OVER_ENEMIES_WON) {
-
-    // Player 1 shoots (Space)
-    if (key == SPACE_BAR &&
-        current_state->current_status == WAITING_FOR_PLAYER1_SHOT &&
-        current_state->current_turn == TURN_PLAYER1) {
-      printf("Player 1 firing.\n");
-      body_t *target = NULL;
-      if (is_character_alive(current_state->enemy1)) {
-        target = current_state->enemy1;
-      } else if (is_character_alive(current_state->enemy2)) {
-        target = current_state->enemy2;
+  if (type == KEY_PRESSED) {
+    // Game mode selection
+    if (current_state->current_status == GAME_MODE_SELECTION) {
+      if (key == '1') {
+        current_state->game_mode = GAME_MODE_1_EASY;
+        current_state->game_mode_selected = true;
+        current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
+        printf("\nRookie Mode Selected.\n");
+        printf("Player 1's turn to shoot! (Press SPACE)\n");
+      } else if (key == '2') {
+        current_state->game_mode = GAME_MODE_2_HARD;
+        current_state->game_mode_selected = true;
+        current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
+        printf("\nPirate King Mode selected!\n");
+        printf("Player 1's turn to shoot! (Press SPACE)\n");
       }
-
-      if (target) {
-        fire_bullet(current_state, current_state->player1, target,
-                    TYPE_BULLET_PLAYER1);
-        current_state->current_status = PLAYER1_SHOT_ACTIVE;
-      }
+      return;
     }
 
-    // Player 2 shoots (Enter)
-    else if (key == '\r' &&
-             current_state->current_status == WAITING_FOR_PLAYER2_SHOT &&
-             current_state->current_turn == TURN_PLAYER2) {
-      printf("Player 2 firing.\n");
-      body_t *target = NULL;
-      if (is_character_alive(current_state->enemy1)) {
-        target = current_state->enemy1;
-      } else if (is_character_alive(current_state->enemy2)) {
-        target = current_state->enemy2;
+    if (current_state->game_mode_selected &&
+        current_state->current_status != GAME_OVER_WATER &&
+        current_state->current_status != GAME_WON_PLAYERS_WON &&
+        current_state->current_status != GAME_OVER_ENEMIES_WON) {
+
+      // Player 1 shoots (Space)
+      if (key == SPACE_BAR &&
+          current_state->current_status == WAITING_FOR_PLAYER1_SHOT &&
+          current_state->current_turn == TURN_PLAYER1) {
+        printf("Player 1 firing.\n");
+        body_t *target = NULL;
+        if (is_character_alive(current_state->enemy1)) {
+          target = current_state->enemy1;
+        } else if (is_character_alive(current_state->enemy2)) {
+          target = current_state->enemy2;
+        }
+
+        if (target) {
+          fire_bullet(current_state, current_state->player1, target,
+                      TYPE_BULLET_PLAYER1);
+          current_state->current_status = PLAYER1_SHOT_ACTIVE;
+        }
       }
 
-      if (target) {
-        fire_bullet(current_state, current_state->player2, target,
-                    TYPE_BULLET_PLAYER2);
-        current_state->current_status = PLAYER2_SHOT_ACTIVE;
+      // Player 2 shoots (Enter)
+      else if (key == '\r' &&
+               current_state->current_status == WAITING_FOR_PLAYER2_SHOT &&
+               current_state->current_turn == TURN_PLAYER2) {
+        printf("Player 2 firing.\n");
+        body_t *target = NULL;
+        if (is_character_alive(current_state->enemy1)) {
+          target = current_state->enemy1;
+        } else if (is_character_alive(current_state->enemy2)) {
+          target = current_state->enemy2;
+        }
+
+        if (target) {
+          fire_bullet(current_state, current_state->player2, target,
+                      TYPE_BULLET_PLAYER2);
+          current_state->current_status = PLAYER2_SHOT_ACTIVE;
+        }
       }
     }
   }
@@ -865,7 +900,9 @@ state_t *emscripten_init() {
   assert(current_state != NULL);
 
   current_state->scene = scene_init();
-  current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
+  current_state->current_status = GAME_MODE_SELECTION;
+  current_state->game_mode = GAME_MODE_1_EASY;
+  current_state->game_mode_selected = false;
   current_state->current_turn = TURN_PLAYER1;
   current_state->shot_delay_timer = 0.0;
   current_state->next_turn_after_delay = TURN_PLAYER1;
@@ -953,6 +990,8 @@ state_t *emscripten_init() {
 
   sdl_on_key((key_handler_t)on_key_press);
   sdl_on_mouse((mouse_handler_t)mouse_handler);
+
+  select_game_mode(current_state);
 
   return current_state;
 }
@@ -1067,22 +1106,30 @@ void update_and_draw_visualization(state_t *state) {
     body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
     body_tick(dot, DOTS_SEP_DT * i);
     sdl_draw_body(dot);
-    /* printf("centroid %zu: %f, mouse x = %f, mouse y = %f, diff x = %f, y =
-     * %f\n", i, body_get_centroid(dot).x, mouse.x, mouse.y, diff.x, diff.y); */
   }
 }
 
 bool emscripten_main(state_t *current_state) {
   double dt = time_since_last_tick();
 
+  if (current_state->current_status == GAME_MODE_SELECTION) {
+    sdl_clear();
+    list_t *assets = asset_get_asset_list();
+    for (size_t i = 0; i < list_size(assets); i++) {
+      asset_render(list_get(assets, i));
+    }
+    sdl_show();
+    return false;
+  }
+
+  if (!current_state->game_mode_selected)
+    return false;
+
   // check if game over
   check_game_over(current_state);
 
   // update music
   check_and_update_music(current_state);
-
-  // update visualization
-  /* track_cursor(current_state); */
 
   if (current_state->current_status != GAME_OVER_WATER &&
       current_state->current_status != GAME_WON_PLAYERS_WON &&
@@ -1185,9 +1232,7 @@ bool emscripten_main(state_t *current_state) {
 
   update_and_draw_hp_bars(current_state);
 
-  // Visualization
-  const bool easy = true;
-  if (easy &&
+  if (current_state->game_mode == GAME_MODE_1_EASY &&
       (current_state->current_status == WAITING_FOR_PLAYER1_SHOT ||
        current_state->current_status == WAITING_FOR_PLAYER2_SHOT) &&
       current_state->mouse_down)
