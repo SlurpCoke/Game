@@ -50,7 +50,7 @@ const color_t WATER_DEATH_COLOR = (color_t){0.1, 0.1, 0.1};
 const color_t WHITE = {1, 1, 1};
 
 // Physics & Game Constants
-const double BULLET_VELOCITY = 250.0; // per axis
+const double BULLET_VELOCITY = 500.0; // per axis
 const double GRAVITY_ACCELERATION = 250.0;
 const double KNOCKBACK_BASE_VELOCITY_X = 40.0;
 const double KNOCKBACK_BASE_VELOCITY_Y = 100.0;
@@ -279,6 +279,7 @@ struct level_info *build_level() {
            CHARACTER_MIN_DIST);
 
   return level;
+}
 
 // ask user for game mode
 void select_game_mode(state_t *state) {
@@ -669,8 +670,20 @@ body_t *choose_ai_target(state_t *state, body_t *shooter) {
   return NULL;
 }
 
+vector_t calculate_projectile_arc(vector_t diff) {
+    /* vector_t diff = vec_subtract(tgt, src); */
+    printf("diff = %f, %f\n", diff.x, diff.y);
+    double arg = (GRAVITY_ACCELERATION * fabs(diff.x)/2) / (BULLET_VELOCITY * BULLET_VELOCITY);
+    printf("arg = %f\n", arg);
+    double theta = 0.5 * asin(arg);
+    /* double discriminant = pow(BULLET_VELOCITY, 4) - GRAVITY_ACCELERATION * (GRAVITY_ACCELERATION * pow(diff.x, 2) + 2 * diff.y * pow(BULLET_VELOCITY, 2)); */
+    /* double theta = atan(pow(BULLET_VELOCITY, 2) + sqrt(discriminant) / (GRAVITY_ACCELERATION * diff.x)); */
+   
+    return (vector_t){-BULLET_VELOCITY * cos(theta), BULLET_VELOCITY * sin(theta)};
+}
+
 body_t *fire_bullet(state_t *current_state, body_t *shooter,
-                    body_t *target_to_aim_at, body_type_t bullet_tag) {
+                    body_t *target_to_aim_at, body_type_t bullet_tag, bool horizontal) {
   vector_t shooter_pos = body_get_centroid(shooter);
   character_info_t *shooter_info = (character_info_t *)body_get_info(shooter);
   vector_t fire_direction =
@@ -679,12 +692,22 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
   vector_t bullet_start_pos = vec_add(
       shooter_pos,
       (vector_t){dir_x * (CHARACTER_SIZE / 2.0 + BULLET_WIDTH / 2.0 + 5.0), 0});
-  vector_t bullet_velocity = {dir_x * BULLET_VELOCITY, 0};
+
+  vector_t bullet_velocity;
+  if (horizontal) {
+      bullet_velocity = (vector_t){dir_x * BULLET_VELOCITY, 0};
+  } else {
+      bullet_velocity = calculate_projectile_arc(fire_direction);
+  }
+  printf("bullet velocity = (%f, %f)\n", bullet_velocity.x, bullet_velocity.y);
 
   body_t *bullet = make_projectile_body(
       bullet_start_pos, BULLET_WIDTH, BULLET_HEIGHT, BULLET_COLOR, bullet_tag,
       shooter_info ? shooter_info->id : -1, 1.0);
   body_set_velocity(bullet, bullet_velocity);
+  if (!horizontal) {
+      body_add_force(bullet, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
+  }
   scene_add_body(current_state->scene, bullet);
 
   if (bullet_tag == TYPE_BULLET_PLAYER1 || bullet_tag == TYPE_BULLET_PLAYER2) {
@@ -744,7 +767,7 @@ void on_key_press(char key, key_event_type_t type, double held_time,
 
         if (target) {
           fire_bullet(current_state, current_state->player1, target,
-                      TYPE_BULLET_PLAYER1);
+                      TYPE_BULLET_PLAYER1, true);
           current_state->current_status = PLAYER1_SHOT_ACTIVE;
         }
       }
@@ -763,7 +786,7 @@ void on_key_press(char key, key_event_type_t type, double held_time,
 
         if (target) {
           fire_bullet(current_state, current_state->player2, target,
-                      TYPE_BULLET_PLAYER2);
+                      TYPE_BULLET_PLAYER2, true);
           current_state->current_status = PLAYER2_SHOT_ACTIVE;
         }
       }
@@ -954,6 +977,8 @@ void character_platform_contact_handler(body_t *character, body_t *platform,
   }
 }
 
+void shoot_trajectory(state_t *state);
+
 void mouse_handler(mouse_event_type_t type, int x, int y, state_t *state) {
   switch (type) {
   case MOUSE_DOWN: {
@@ -973,8 +998,9 @@ void mouse_handler(mouse_event_type_t type, int x, int y, state_t *state) {
   case MOUSE_UP: {
     state->mouse_down = false;
     printf("Mouse up!\n");
-    break;
+    shoot_trajectory(state);
   }
+break;
   default:
     break;
   }
@@ -1173,6 +1199,38 @@ void update_and_draw_hp_bars(state_t *state) {
   }
 }
 
+void shoot_trajectory(state_t *state) {
+  body_t *player = state->current_status == WAITING_FOR_PLAYER1_SHOT
+                       ? state->player1
+                       : state->player2;
+  const vector_t mouse = (vector_t){
+      (double)state->mouse_x, MAX_SCREEN_COORDS.y - (double)state->mouse_y};
+  vector_t player_center = body_get_centroid(player);
+  vector_t diff = vec_subtract(player_center, mouse);
+
+  if (diff.x < 0 || diff.y < 0) {
+    return;
+  }
+
+  diff.x *= BULLET_VELOCITY / player_center.x * MOUSE_SCALE;
+  diff.y *= BULLET_VELOCITY / player_center.y * MOUSE_SCALE;
+
+  // Constrain distance
+  if (diff.x > BULLET_VELOCITY)
+    diff.x = BULLET_VELOCITY;
+  if (diff.y > BULLET_VELOCITY)
+    diff.y = BULLET_VELOCITY;
+
+  body_t *dot = make_visual_dots(body_get_centroid(player), DOT_RADIUS);
+  body_set_velocity(dot, diff);
+  body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT * 50});
+    create_collision(state->scene, dot, state->enemy1,
+                     bullet_hit_target_handler, state, 0.0, NULL);
+    create_collision(state->scene, dot, state->enemy2,
+                     bullet_hit_target_handler, state, 0.0, NULL);
+  scene_add_body(state->scene, dot);
+}
+
 void update_and_draw_visualization(state_t *state) {
   body_t *player = state->current_status == WAITING_FOR_PLAYER1_SHOT
                        ? state->player1
@@ -1261,7 +1319,7 @@ bool emscripten_main(state_t *current_state) {
         body_t *target = choose_ai_target(current_state, current_state->enemy1);
         if (target) {
           fire_bullet(current_state, current_state->enemy1, target,
-                      TYPE_BULLET_ENEMY1);
+                      TYPE_BULLET_ENEMY1, false);
           current_state->current_status = ENEMY1_SHOT_ACTIVE;
         }
       } else {
@@ -1285,7 +1343,7 @@ bool emscripten_main(state_t *current_state) {
         body_t *target = choose_ai_target(current_state, current_state->enemy2);
         if (target) {
           fire_bullet(current_state, current_state->enemy2, target,
-                      TYPE_BULLET_ENEMY2);
+                      TYPE_BULLET_ENEMY2, false);
           current_state->current_status = ENEMY2_SHOT_ACTIVE;
         }
       } else {
