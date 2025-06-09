@@ -53,12 +53,7 @@ const double PLATFORM_Y =
     WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + PLATFORM_HEIGHT / 2.0;
 const vector_t PLATFORM_L_POS = {150, PLATFORM_Y};
 const vector_t PLATFORM_R_POS = {MAX_SCREEN_COORDS.x - 150, PLATFORM_Y};
-<<<<<<< demo/game.c
-const vector_t PLAYER_START_POS = {PLATFORM_L_POS.x - 10,
-                                   PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 +
-                                       CHARACTER_SIZE / 2.0 + 0.1};
-const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - CHARACTER_SIZE / 1.5,
-=======
+
 // Player positions
 const vector_t PLAYER1_START_POS = {PLATFORM_L_POS.x - 40,
                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 +
@@ -68,7 +63,6 @@ const vector_t PLAYER2_START_POS = {PLATFORM_L_POS.x + 40,
                                         CHARACTER_SIZE / 2.0 + 0.1};
 // Enemy positions
 const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - 40,
->>>>>>> demo/game.c
                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
                                        CHARACTER_SIZE / 2.0 + 0.1};
 const vector_t ENEMY2_START_POS = {PLATFORM_R_POS.x + 40,
@@ -1046,10 +1040,10 @@ void update_and_draw_hp_bars(state_t *state) {
 }
 
 void update_and_draw_visualization(state_t *state) {
-  // unit vector for aiming direction
+    body_t *player = state->current_status == WAITING_FOR_PLAYER1_SHOT ? state->player1 : state->player2;
   const vector_t mouse = (vector_t){
       (double)state->mouse_x, MAX_SCREEN_COORDS.y - (double)state->mouse_y};
-  vector_t player_center = body_get_centroid(state->player);
+  vector_t player_center = body_get_centroid(player);
   vector_t diff = vec_subtract(player_center, mouse);
 
   if (diff.x < 0 || diff.y < 0) {
@@ -1067,7 +1061,7 @@ void update_and_draw_visualization(state_t *state) {
 
   for (size_t i = 1; i <= N_DOTS; i++) {
     body_t *dot =
-        make_visual_dots(body_get_centroid(state->player), DOT_RADIUS);
+        make_visual_dots(body_get_centroid(player), DOT_RADIUS);
     body_set_velocity(dot, diff);
     body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
     body_tick(dot, DOTS_SEP_DT * i);
@@ -1190,12 +1184,12 @@ bool emscripten_main(state_t *current_state) {
 
   update_and_draw_hp_bars(current_state);
 
-<<<<<<< demo/game.c
   // Visualization
   const bool easy = true;
-  if (easy && current_state->current_status == WAITING_FOR_PLAYER_SHOT &&
-      current_state->mouse_down)
+  if (easy &&
+          (current_state->current_status == WAITING_FOR_PLAYER1_SHOT || current_state->current_status == WAITING_FOR_PLAYER2_SHOT) && current_state->mouse_down)
     update_and_draw_visualization(current_state);
+
 
   // Display messages
   if ((current_state->current_status == GAME_WON_PLAYERS_WON ||
