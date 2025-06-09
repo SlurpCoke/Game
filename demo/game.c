@@ -20,7 +20,6 @@
 #include "../include/state.h"
 #include "../include/vector.h"
 
-
 // Sizes and Positions
 const vector_t MIN_SCREEN_COORDS = {0, 0};
 const vector_t MAX_SCREEN_COORDS = {1000, 500};
@@ -68,16 +67,16 @@ const vector_t PLATFORM_Y_DELTA = {20.0, 50.0};
 const double CHARACTER_MIN_DIST = 200.0;
 
 struct level_info {
-    double platform_width;
-    double platform_height;
-    double platform_y;
-    vector_t platform_l_pos;
-    vector_t platform_r_pos;
+  double platform_width;
+  double platform_height;
+  double platform_y;
+  vector_t platform_l_pos;
+  vector_t platform_r_pos;
 
-    vector_t player1_start_pos;
-    vector_t player2_start_pos;
-    vector_t enemy1_start_pos;
-    vector_t enemy2_start_pos;
+  vector_t player1_start_pos;
+  vector_t player2_start_pos;
+  vector_t enemy1_start_pos;
+  vector_t enemy2_start_pos;
 };
 
 struct level_info *build_level();
@@ -89,17 +88,21 @@ struct level_info *build_level();
 
 /* // Player positions */
 /* const vector_t PLAYER1_START_POS = {PLATFORM_L_POS.x, */
-/*                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 + */
+/*                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0
+ * + */
 /*                                         CHARACTER_SIZE / 2.0 + 0.1}; */
 /* const vector_t PLAYER2_START_POS = {PLATFORM_L_POS.x + 40, */
-/*                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 + */
+/*                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0
+ * + */
 /*                                         CHARACTER_SIZE / 2.0 + 0.1}; */
 /* // Enemy positions */
 /* const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - 40, */
-/*                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 + */
+/*                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
+ */
 /*                                        CHARACTER_SIZE / 2.0 + 0.1}; */
 /* const vector_t ENEMY2_START_POS = {PLATFORM_R_POS.x + 40, */
-/*                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 + */
+/*                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
+ */
 /*                                        CHARACTER_SIZE / 2.0 + 0.1}; */
 
 // Visualization
@@ -210,54 +213,66 @@ bool is_any_character_low_hp(state_t *state);
 bool is_character_alive(body_t *character);
 
 double random_range(vector_t rng) {
-    double range = rng.y - rng.x;
-    double d = RAND_MAX / range;
-    return (rand() / d) + rng.x;
+  double range = rng.y - rng.x;
+  double d = RAND_MAX / range;
+  return (rand() / d) + rng.x;
 }
 
 bool random_prob(double prob) {
-    long int r = random();
-    double threshold = prob * RAND_MAX;
-    return r < threshold;
+  long int r = random();
+  double threshold = prob * RAND_MAX;
+  return r < threshold;
 }
 
 struct level_info *build_level() {
-    struct level_info *level = malloc(sizeof(struct level_info));
-    level->platform_width = random_range(PLATFORM_WIDTH_RANGE);
+  struct level_info *level = malloc(sizeof(struct level_info));
+  level->platform_width = random_range(PLATFORM_WIDTH_RANGE);
 
-    if (random_prob(PLATFORM_LEVEL_CHANCE)) {
-        level->platform_height = PLATFORM_Y_DELTA.x;
-    } else {
-        level->platform_height = random_range(PLATFORM_Y_DELTA);
-    }
+  if (random_prob(PLATFORM_LEVEL_CHANCE)) {
+    level->platform_height = PLATFORM_Y_DELTA.x;
+  } else {
+    level->platform_height = random_range(PLATFORM_Y_DELTA);
+  }
 
-    level->platform_y = WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + level->platform_height / 2.0;
-    level->platform_l_pos = (vector_t){level->platform_width, level->platform_y};
-    level->platform_r_pos = (vector_t){MAX_SCREEN_COORDS.x - level->platform_width, level->platform_y};
+  level->platform_y =
+      WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + level->platform_height / 2.0;
+  level->platform_l_pos = (vector_t){level->platform_width, level->platform_y};
+  level->platform_r_pos = (vector_t){
+      MAX_SCREEN_COORDS.x - level->platform_width, level->platform_y};
 
-    do {
-        level->player1_start_pos = (vector_t){
-            random_range((vector_t){level->platform_l_pos.x - level->platform_width / 2, level->platform_l_pos.x + level->platform_width / 2}),
-                level->platform_l_pos.y + level->platform_height / 2.0 + CHARACTER_SIZE / 2.0 + 0.1
-        };
-        level->player2_start_pos = (vector_t){
-            random_range((vector_t){level->platform_l_pos.x - level->platform_width / 2, level->platform_l_pos.x + level->platform_width / 2}),
-                level->platform_l_pos.y + level->platform_height / 2.0 + CHARACTER_SIZE / 2.0 + 0.1
-        };
-    } while (fabs(level->player1_start_pos.x - level->player2_start_pos.x) >= CHARACTER_MIN_DIST);
-    
-    do {
-        level->enemy1_start_pos = (vector_t){
-            random_range((vector_t){level->platform_r_pos.x - level->platform_width / 2, level->platform_r_pos.x + level->platform_width / 2}),
-                level->platform_r_pos.y + level->platform_height / 2.0 + CHARACTER_SIZE / 2.0 + 0.1
-        };
-        level->enemy2_start_pos = (vector_t){
-            random_range((vector_t){level->platform_r_pos.x - level->platform_width / 2, level->platform_r_pos.x + level->platform_width / 2}),
-                level->platform_r_pos.y + level->platform_height / 2.0 + CHARACTER_SIZE / 2.0 + 0.1
-        };
-    } while (fabs(level->enemy1_start_pos.x - level->enemy2_start_pos.x) >= CHARACTER_MIN_DIST);
+  do {
+    level->player1_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_l_pos.x - level->platform_width / 2,
+                       level->platform_l_pos.x + level->platform_width / 2}),
+                   level->platform_l_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+    level->player2_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_l_pos.x - level->platform_width / 2,
+                       level->platform_l_pos.x + level->platform_width / 2}),
+                   level->platform_l_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+  } while (fabs(level->player1_start_pos.x - level->player2_start_pos.x) >=
+           CHARACTER_MIN_DIST);
 
-    return level;
+  do {
+    level->enemy1_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_r_pos.x - level->platform_width / 2,
+                       level->platform_r_pos.x + level->platform_width / 2}),
+                   level->platform_r_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+    level->enemy2_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_r_pos.x - level->platform_width / 2,
+                       level->platform_r_pos.x + level->platform_width / 2}),
+                   level->platform_r_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+  } while (fabs(level->enemy1_start_pos.x - level->enemy2_start_pos.x) >=
+           CHARACTER_MIN_DIST);
+
+  return level;
 }
 
 // initialize audio
@@ -959,17 +974,18 @@ state_t *emscripten_init() {
       MAX_SCREEN_COORDS.x, WATER_HEIGHT, WATER_COLOR, TYPE_WATER, INFINITY);
   scene_add_body(current_state->scene, current_state->water_body);
   current_state->platform_l = make_generic_rectangle_body(
-      info->platform_l_pos, info->platform_width, info->platform_height, PLATFORM_COLOR,
-      TYPE_PLATFORM, INFINITY);
+      info->platform_l_pos, info->platform_width, info->platform_height,
+      PLATFORM_COLOR, TYPE_PLATFORM, INFINITY);
   scene_add_body(current_state->scene, current_state->platform_l);
   current_state->platform_r = make_generic_rectangle_body(
-      info->platform_r_pos, info->platform_width, info->platform_height, PLATFORM_COLOR,
-      TYPE_PLATFORM, INFINITY);
+      info->platform_r_pos, info->platform_width, info->platform_height,
+      PLATFORM_COLOR, TYPE_PLATFORM, INFINITY);
   scene_add_body(current_state->scene, current_state->platform_r);
 
   // Create Player 1
-  current_state->player1 = make_character_body(
-      info->player1_start_pos, CHARACTER_SIZE, PLAYER1_COLOR, TYPE_PLAYER1, 1, 10.0);
+  current_state->player1 =
+      make_character_body(info->player1_start_pos, CHARACTER_SIZE,
+                          PLAYER1_COLOR, TYPE_PLAYER1, 1, 10.0);
   asset_make_image_with_body(PLAYER1_PATH, current_state->player1);
   scene_add_body(current_state->scene, current_state->player1);
   list_add(current_state->all_characters, current_state->player1);
@@ -981,8 +997,9 @@ state_t *emscripten_init() {
       character_platform_contact_handler, current_state, 0.0, NULL);
 
   // Create Player 2
-  current_state->player2 = make_character_body(
-      info->player2_start_pos, CHARACTER_SIZE, PLAYER2_COLOR, TYPE_PLAYER2, 2, 10.0);
+  current_state->player2 =
+      make_character_body(info->player2_start_pos, CHARACTER_SIZE,
+                          PLAYER2_COLOR, TYPE_PLAYER2, 2, 10.0);
   asset_make_image_with_body(PLAYER2_PATH, current_state->player2);
   scene_add_body(current_state->scene, current_state->player2);
   list_add(current_state->all_characters, current_state->player2);
@@ -994,8 +1011,9 @@ state_t *emscripten_init() {
       character_platform_contact_handler, current_state, 0.0, NULL);
 
   // Create Enemy 1
-  current_state->enemy1 = make_character_body(
-      info->enemy1_start_pos, CHARACTER_SIZE, ENEMY1_COLOR, TYPE_ENEMY1, 3, 10.0);
+  current_state->enemy1 =
+      make_character_body(info->enemy1_start_pos, CHARACTER_SIZE, ENEMY1_COLOR,
+                          TYPE_ENEMY1, 3, 10.0);
   asset_make_image_with_body(ENEMY_PATH, current_state->enemy1);
   scene_add_body(current_state->scene, current_state->enemy1);
   list_add(current_state->all_characters, current_state->enemy1);
@@ -1007,8 +1025,9 @@ state_t *emscripten_init() {
       character_platform_contact_handler, current_state, 0.0, NULL);
 
   // Create Enemy 2
-  current_state->enemy2 = make_character_body(
-      info->enemy2_start_pos, CHARACTER_SIZE, ENEMY2_COLOR, TYPE_ENEMY2, 4, 10.0);
+  current_state->enemy2 =
+      make_character_body(info->enemy2_start_pos, CHARACTER_SIZE, ENEMY2_COLOR,
+                          TYPE_ENEMY2, 4, 10.0);
   asset_make_image_with_body(ENEMY_PATH, current_state->enemy2);
   scene_add_body(current_state->scene, current_state->enemy2);
   list_add(current_state->all_characters, current_state->enemy2);
