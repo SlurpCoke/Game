@@ -1040,7 +1040,9 @@ void update_and_draw_hp_bars(state_t *state) {
 }
 
 void update_and_draw_visualization(state_t *state) {
-    body_t *player = state->current_status == WAITING_FOR_PLAYER1_SHOT ? state->player1 : state->player2;
+  body_t *player = state->current_status == WAITING_FOR_PLAYER1_SHOT
+                       ? state->player1
+                       : state->player2;
   const vector_t mouse = (vector_t){
       (double)state->mouse_x, MAX_SCREEN_COORDS.y - (double)state->mouse_y};
   vector_t player_center = body_get_centroid(player);
@@ -1060,8 +1062,7 @@ void update_and_draw_visualization(state_t *state) {
     diff.y = BULLET_VELOCITY;
 
   for (size_t i = 1; i <= N_DOTS; i++) {
-    body_t *dot =
-        make_visual_dots(body_get_centroid(player), DOT_RADIUS);
+    body_t *dot = make_visual_dots(body_get_centroid(player), DOT_RADIUS);
     body_set_velocity(dot, diff);
     body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
     body_tick(dot, DOTS_SEP_DT * i);
@@ -1187,15 +1188,16 @@ bool emscripten_main(state_t *current_state) {
   // Visualization
   const bool easy = true;
   if (easy &&
-          (current_state->current_status == WAITING_FOR_PLAYER1_SHOT || current_state->current_status == WAITING_FOR_PLAYER2_SHOT) && current_state->mouse_down)
+      (current_state->current_status == WAITING_FOR_PLAYER1_SHOT ||
+       current_state->current_status == WAITING_FOR_PLAYER2_SHOT) &&
+      current_state->mouse_down)
     update_and_draw_visualization(current_state);
-
 
   // Display messages
   if ((current_state->current_status == GAME_WON_PLAYERS_WON ||
        current_state->current_status == GAME_OVER_ENEMIES_WON ||
        current_state->current_status == GAME_OVER_WATER) &&
-       !current_state->game_over_message_printed) {
+      !current_state->game_over_message_printed) {
     if (current_state->current_status == GAME_WON_PLAYERS_WON) {
       printf("VICTORY - Players Won!\n");
     } else if (current_state->current_status == GAME_OVER_ENEMIES_WON) {
