@@ -37,18 +37,35 @@ const color_t HP_BAR_FG_COLOR = (color_t){0.0, 1.0, 0.0};
 const color_t WATER_DEATH_COLOR = (color_t){0.1, 0.1, 0.1};
 const color_t WHITE = {1, 1, 1};
 
-// Sizes and Positions
-const double PLATFORM_WIDTH = 150.0;
-const double PLATFORM_HEIGHT = 20.0;
-const double CHARACTER_SIZE = 80.0;
-const double BULLET_WIDTH = 20.0;
-const double BULLET_HEIGHT = 10.0;
-const double WATER_Y_CENTER = 10.0;
-const double WATER_HEIGHT = 20.0;
-const double HP_BAR_WIDTH = 40.0;
-const double HP_BAR_HEIGHT = 5.0;
-const double HP_BAR_Y_OFFSET = 25.0;
-const size_t CIRC_NPOINTS = 20;
+// Physics & Game Constants
+const double BULLET_VELOCITY = 500.0; // per axis
+const double GRAVITY_ACCELERATION = 250.0;
+const double KNOCKBACK_BASE_VELOCITY_X = 40.0;
+const double KNOCKBACK_BASE_VELOCITY_Y = 100.0;
+const double MAX_HEALTH = 100.0;
+const double SHOT_DELAY_TIME = 1.0;
+const double LOW_HP_THRESHOLD = 50.0;
+const double BULLET_WEIGHT = 5;
+
+// Automatic Level Generation
+const vector_t PLATFORM_WIDTH_RANGE = {100.0, 300.0};
+const double PLATFORM_LEVEL_CHANCE = 0.5;
+const vector_t PLATFORM_Y_DELTA = {20.0, 50.0};
+
+const double CHARACTER_MIN_DIST = 200.0;
+
+struct level_info {
+  double platform_width;
+  double platform_height;
+  double platform_y;
+  vector_t platform_l_pos;
+  vector_t platform_r_pos;
+
+  vector_t player1_start_pos;
+  vector_t player2_start_pos;
+  vector_t enemy1_start_pos;
+  vector_t enemy2_start_pos;
+};
 
 const double PLATFORM_Y =
     WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + PLATFORM_HEIGHT / 2.0;
@@ -192,7 +209,69 @@ void cleanup_audio_system(state_t *state);
 void check_and_update_music(state_t *state);
 bool is_any_character_low_hp(state_t *state);
 bool is_character_alive(body_t *character);
-void select_game_mode(state_t *state);
+
+double random_range(vector_t rng) {
+  double range = rng.y - rng.x;
+  double d = RAND_MAX / range;
+  return (rand() / d) + rng.x;
+}
+
+bool random_prob(double prob) {
+  long int r = random();
+  double threshold = prob * RAND_MAX;
+  return r < threshold;
+}
+
+struct level_info *build_level() {
+  struct level_info *level = malloc(sizeof(struct level_info));
+  level->platform_width = random_range(PLATFORM_WIDTH_RANGE);
+
+  if (random_prob(PLATFORM_LEVEL_CHANCE)) {
+    level->platform_height = PLATFORM_Y_DELTA.x;
+  } else {
+    level->platform_height = random_range(PLATFORM_Y_DELTA);
+  }
+
+  level->platform_y =
+      WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + level->platform_height / 2.0;
+  level->platform_l_pos = (vector_t){level->platform_width, level->platform_y};
+  level->platform_r_pos = (vector_t){
+      MAX_SCREEN_COORDS.x - level->platform_width, level->platform_y};
+
+  do {
+    level->player1_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_l_pos.x - level->platform_width / 2,
+                       level->platform_l_pos.x + level->platform_width / 2}),
+                   level->platform_l_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+    level->player2_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_l_pos.x - level->platform_width / 2,
+                       level->platform_l_pos.x + level->platform_width / 2}),
+                   level->platform_l_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+  } while (fabs(level->player1_start_pos.x - level->player2_start_pos.x) >=
+           CHARACTER_MIN_DIST);
+
+  do {
+    level->enemy1_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_r_pos.x - level->platform_width / 2,
+                       level->platform_r_pos.x + level->platform_width / 2}),
+                   level->platform_r_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+    level->enemy2_start_pos =
+        (vector_t){random_range((vector_t){
+                       level->platform_r_pos.x - level->platform_width / 2,
+                       level->platform_r_pos.x + level->platform_width / 2}),
+                   level->platform_r_pos.y + level->platform_height / 2.0 +
+                       CHARACTER_SIZE / 2.0 + 0.1};
+  } while (fabs(level->enemy1_start_pos.x - level->enemy2_start_pos.x) >=
+           CHARACTER_MIN_DIST);
+
+  return level;
+}
 
 // ask user for game mode
 void select_game_mode(state_t *state) {
@@ -600,8 +679,26 @@ body_t *choose_ai_target(state_t *state, body_t *shooter) {
   return NULL;
 }
 
+vector_t calculate_projectile_arc(vector_t diff) {
+  /* vector_t diff = vec_subtract(tgt, src); */
+  printf("diff = %f, %f\n", diff.x, diff.y);
+  double arg = (GRAVITY_ACCELERATION * fabs(diff.x) / 2) /
+               (BULLET_VELOCITY * BULLET_VELOCITY);
+  printf("arg = %f\n", arg);
+  double theta = 0.5 * asin(arg);
+  /* double discriminant = pow(BULLET_VELOCITY, 4) - GRAVITY_ACCELERATION *
+   * (GRAVITY_ACCELERATION * pow(diff.x, 2) + 2 * diff.y * pow(BULLET_VELOCITY,
+   * 2)); */
+  /* double theta = atan(pow(BULLET_VELOCITY, 2) + sqrt(discriminant) /
+   * (GRAVITY_ACCELERATION * diff.x)); */
+
+  return (vector_t){-BULLET_VELOCITY * cos(theta),
+                    BULLET_VELOCITY * sin(theta)};
+}
+
 body_t *fire_bullet(state_t *current_state, body_t *shooter,
-                    body_t *target_to_aim_at, body_type_t bullet_tag) {
+                    body_t *target_to_aim_at, body_type_t bullet_tag,
+                    bool horizontal) {
   vector_t shooter_pos = body_get_centroid(shooter);
   character_info_t *shooter_info = (character_info_t *)body_get_info(shooter);
   vector_t fire_direction =
@@ -610,7 +707,14 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
   vector_t bullet_start_pos = vec_add(
       shooter_pos,
       (vector_t){dir_x * (CHARACTER_SIZE / 2.0 + BULLET_WIDTH / 2.0 + 5.0), 0});
-  vector_t bullet_velocity = {dir_x * BULLET_VELOCITY, 0};
+
+  vector_t bullet_velocity;
+  if (horizontal) {
+    bullet_velocity = (vector_t){dir_x * BULLET_VELOCITY, 0};
+  } else {
+    bullet_velocity = calculate_projectile_arc(fire_direction);
+  }
+  printf("bullet velocity = (%f, %f)\n", bullet_velocity.x, bullet_velocity.y);
 
   color_t bullet_color;
   if (bullet_tag == TYPE_BULLET_PLAYER1 || bullet_tag == TYPE_BULLET_PLAYER2) {
@@ -623,6 +727,10 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
       bullet_start_pos, BULLET_WIDTH, BULLET_HEIGHT, bullet_color, bullet_tag,
       shooter_info ? shooter_info->id : -1, 1.0);
   body_set_velocity(bullet, bullet_velocity);
+  if (!horizontal) {
+    body_add_force(bullet,
+                   (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
+  }
   scene_add_body(current_state->scene, bullet);
 
   if (bullet_tag == TYPE_BULLET_PLAYER1 || bullet_tag == TYPE_BULLET_PLAYER2) {
@@ -897,6 +1005,8 @@ void character_platform_contact_handler(body_t *character, body_t *platform,
   }
 }
 
+void shoot_trajectory(state_t *state);
+
 void mouse_handler(mouse_event_type_t type, int x, int y, state_t *state) {
   switch (type) {
   case MOUSE_DOWN: {
@@ -916,8 +1026,8 @@ void mouse_handler(mouse_event_type_t type, int x, int y, state_t *state) {
   case MOUSE_UP: {
     state->mouse_down = false;
     printf("Mouse up!\n");
-    break;
-  }
+    shoot_trajectory(state);
+  } break;
   default:
     break;
   }
@@ -1110,6 +1220,39 @@ void update_and_draw_hp_bars(state_t *state) {
   }
 }
 
+void shoot_trajectory(state_t *state) {
+  body_t *player = state->current_status == WAITING_FOR_PLAYER1_SHOT
+                       ? state->player1
+                       : state->player2;
+  const vector_t mouse = (vector_t){
+      (double)state->mouse_x, MAX_SCREEN_COORDS.y - (double)state->mouse_y};
+  vector_t player_center = body_get_centroid(player);
+  vector_t diff = vec_subtract(player_center, mouse);
+
+  if (diff.x < 0 || diff.y < 0) {
+    return;
+  }
+
+  diff.x *= BULLET_VELOCITY / player_center.x * MOUSE_SCALE;
+  diff.y *= BULLET_VELOCITY / player_center.y * MOUSE_SCALE;
+
+  // Constrain distance
+  if (diff.x > BULLET_VELOCITY)
+    diff.x = BULLET_VELOCITY;
+  if (diff.y > BULLET_VELOCITY)
+    diff.y = BULLET_VELOCITY;
+
+  body_t *dot = make_visual_dots(body_get_centroid(player), DOT_RADIUS);
+  body_set_velocity(dot, diff);
+  body_add_force(dot,
+                 (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT * 50});
+  create_collision(state->scene, dot, state->enemy1, bullet_hit_target_handler,
+                   state, 0.0, NULL);
+  create_collision(state->scene, dot, state->enemy2, bullet_hit_target_handler,
+                   state, 0.0, NULL);
+  scene_add_body(state->scene, dot);
+}
+
 void update_and_draw_visualization(state_t *state) {
   body_t *player = state->current_status == WAITING_FOR_PLAYER1_SHOT
                        ? state->player1
@@ -1197,7 +1340,7 @@ bool emscripten_main(state_t *current_state) {
         body_t *target = choose_ai_target(current_state, current_state->enemy1);
         if (target) {
           fire_bullet(current_state, current_state->enemy1, target,
-                      TYPE_BULLET_ENEMY1);
+                      TYPE_BULLET_ENEMY1, false);
           current_state->current_status = ENEMY1_SHOT_ACTIVE;
         }
       } else {
@@ -1221,7 +1364,7 @@ bool emscripten_main(state_t *current_state) {
         body_t *target = choose_ai_target(current_state, current_state->enemy2);
         if (target) {
           fire_bullet(current_state, current_state->enemy2, target,
-                      TYPE_BULLET_ENEMY2);
+                      TYPE_BULLET_ENEMY2, false);
           current_state->current_status = ENEMY2_SHOT_ACTIVE;
         }
       } else {
