@@ -1,4 +1,5 @@
 #include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_mouse.h>
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
@@ -7,17 +8,17 @@
 #include <string.h>
 #include <time.h>
 
-#include "asset.h"
-#include "asset_cache.h"
-#include "body.h"
-#include "collision.h"
-#include "color.h"
-#include "forces.h"
-#include "list.h"
-#include "scene.h"
-#include "sdl_wrapper.h"
-#include "state.h"
-#include "vector.h"
+#include "../include/asset.h"
+#include "../include/asset_cache.h"
+#include "../include/body.h"
+#include "../include/collision.h"
+#include "../include/color.h"
+#include "../include/forces.h"
+#include "../include/list.h"
+#include "../include/scene.h"
+#include "../include/sdl_wrapper.h"
+#include "../include/state.h"
+#include "../include/vector.h"
 
 const vector_t MIN_SCREEN_COORDS = {0, 0};
 const vector_t MAX_SCREEN_COORDS = {1000, 500};
@@ -33,6 +34,7 @@ const color_t PLATFORM_COLOR = (color_t){0.5, 0.5, 0.5};
 const color_t HP_BAR_BG_COLOR = (color_t){0.4, 0.0, 0.0};
 const color_t HP_BAR_FG_COLOR = (color_t){0.0, 1.0, 0.0};
 const color_t WATER_DEATH_COLOR = (color_t){0.1, 0.1, 0.1};
+const color_t WHITE = {1, 1, 1};
 
 // Sizes and Positions
 const double PLATFORM_WIDTH = 150.0;
@@ -45,11 +47,18 @@ const double WATER_HEIGHT = 20.0;
 const double HP_BAR_WIDTH = 40.0;
 const double HP_BAR_HEIGHT = 5.0;
 const double HP_BAR_Y_OFFSET = 25.0;
+const size_t CIRC_NPOINTS = 20;
 
 const double PLATFORM_Y =
     WATER_Y_CENTER + WATER_HEIGHT / 2.0 + 20.0 + PLATFORM_HEIGHT / 2.0;
 const vector_t PLATFORM_L_POS = {150, PLATFORM_Y};
 const vector_t PLATFORM_R_POS = {MAX_SCREEN_COORDS.x - 150, PLATFORM_Y};
+<<<<<<< demo/game.c
+const vector_t PLAYER_START_POS = {PLATFORM_L_POS.x - 10,
+                                   PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 +
+                                       CHARACTER_SIZE / 2.0 + 0.1};
+const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - CHARACTER_SIZE / 1.5,
+=======
 // Player positions
 const vector_t PLAYER1_START_POS = {PLATFORM_L_POS.x - 40,
                                     PLATFORM_L_POS.y + PLATFORM_HEIGHT / 2.0 +
@@ -59,11 +68,18 @@ const vector_t PLAYER2_START_POS = {PLATFORM_L_POS.x + 40,
                                         CHARACTER_SIZE / 2.0 + 0.1};
 // Enemy positions
 const vector_t ENEMY1_START_POS = {PLATFORM_R_POS.x - 40,
+>>>>>>> demo/game.c
                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
                                        CHARACTER_SIZE / 2.0 + 0.1};
 const vector_t ENEMY2_START_POS = {PLATFORM_R_POS.x + 40,
                                    PLATFORM_R_POS.y + PLATFORM_HEIGHT / 2.0 +
                                        CHARACTER_SIZE / 2.0 + 0.1};
+
+// Visualization
+const size_t N_DOTS = 20;
+const double DOT_RADIUS = 4;
+const double DOTS_SEP_DT = 0.2;
+const double MOUSE_SCALE = 1.5;
 
 // Audio File Paths
 const char *BACKGROUND_MUSIC_PATH = "assets/calm_pirate.wav";
@@ -75,13 +91,14 @@ const char *PLAYER2_PATH = "assets/player_1.png";
 const char *ENEMY_PATH = "assets/enemy.png";
 
 // Physics & Game Constants
-const double BULLET_VELOCITY_X = 250.0;
+const double BULLET_VELOCITY = 250.0; // per axis
 const double GRAVITY_ACCELERATION = 250.0;
 const double KNOCKBACK_BASE_VELOCITY_X = 40.0;
 const double KNOCKBACK_BASE_VELOCITY_Y = 100.0;
 const double MAX_HEALTH = 100.0;
 const double SHOT_DELAY_TIME = 1.0;
 const double LOW_HP_THRESHOLD = 50.0;
+const double BULLET_WEIGHT = 5;
 
 const char *BACKGROUND_PATH = "assets/frogger-background.png";
 
@@ -96,7 +113,8 @@ typedef enum {
   TYPE_BULLET_ENEMY2,
   TYPE_WATER,
   TYPE_PLATFORM,
-  TYPE_HP_BAR
+  TYPE_HP_BAR,
+  TYPE_VISUAL_DOT
 } body_type_t;
 
 typedef enum {
@@ -151,6 +169,10 @@ struct state {
   Mix_Music *low_hp_music;
   bool is_low_hp_music_playing;
   bool audio_initialized;
+
+  bool mouse_down;
+  int mouse_x;
+  int mouse_y;
 };
 
 // Forward declarations
@@ -425,6 +447,26 @@ turn_order_t get_next_turn(turn_order_t last_turn, body_t *player1,
   return TURN_PLAYER1;
 }
 
+body_t *make_visual_dots(vector_t center, double radius) {
+  list_t *c = list_init(CIRC_NPOINTS, free);
+
+  for (size_t i = 0; i < CIRC_NPOINTS; i++) {
+    double angle = 2 * M_PI * i / CIRC_NPOINTS;
+
+    vector_t *v = malloc(sizeof(*v));
+    assert(v);
+
+    vector_t unit = {cos(angle), sin(angle)};
+    *v = vec_add(vec_multiply(radius, unit), center);
+
+    list_add(c, v);
+  }
+
+  character_info_t *info = malloc(sizeof(character_info_t));
+  info->type = TYPE_VISUAL_DOT;
+  return body_init_with_info(c, 10, WHITE, info, free);
+}
+
 body_t *make_generic_rectangle_body(vector_t center, double width,
                                     double height, color_t color,
                                     body_type_t type_tag, double mass) {
@@ -540,7 +582,7 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
   vector_t bullet_start_pos = vec_add(
       shooter_pos,
       (vector_t){dir_x * (CHARACTER_SIZE / 2.0 + BULLET_WIDTH / 2.0 + 5.0), 0});
-  vector_t bullet_velocity = {dir_x * BULLET_VELOCITY_X, 0};
+  vector_t bullet_velocity = {dir_x * BULLET_VELOCITY, 0};
 
   body_t *bullet = make_projectile_body(
       bullet_start_pos, BULLET_WIDTH, BULLET_HEIGHT, BULLET_COLOR, bullet_tag,
@@ -794,6 +836,32 @@ void character_platform_contact_handler(body_t *character, body_t *platform,
   }
 }
 
+void mouse_handler(mouse_event_type_t type, int x, int y, state_t *state) {
+  switch (type) {
+  case MOUSE_DOWN: {
+    state->mouse_down = true;
+    state->mouse_x = 0;
+    state->mouse_y = 0;
+    printf("Mouse down!\n");
+    break;
+  }
+  case MOUSE_MOVE: {
+    if (state->mouse_down) {
+      state->mouse_x = x;
+      state->mouse_y = y;
+    }
+    break;
+  }
+  case MOUSE_UP: {
+    state->mouse_down = false;
+    printf("Mouse up!\n");
+    break;
+  }
+  default:
+    break;
+  }
+}
+
 state_t *emscripten_init() {
   asset_cache_init();
   sdl_init(MIN_SCREEN_COORDS, MAX_SCREEN_COORDS);
@@ -884,7 +952,14 @@ state_t *emscripten_init() {
   scene_add_force_creator(current_state->scene, apply_conditional_gravity,
                           current_state->all_characters,
                           current_state->all_characters, NULL);
+
+  current_state->mouse_down = false;
+  current_state->mouse_x = 0;
+  current_state->mouse_y = 0;
+
   sdl_on_key((key_handler_t)on_key_press);
+  sdl_on_mouse((mouse_handler_t)mouse_handler);
+
   return current_state;
 }
 
@@ -970,6 +1045,38 @@ void update_and_draw_hp_bars(state_t *state) {
   }
 }
 
+void update_and_draw_visualization(state_t *state) {
+  // unit vector for aiming direction
+  const vector_t mouse = (vector_t){
+      (double)state->mouse_x, MAX_SCREEN_COORDS.y - (double)state->mouse_y};
+  vector_t player_center = body_get_centroid(state->player);
+  vector_t diff = vec_subtract(player_center, mouse);
+
+  if (diff.x < 0 || diff.y < 0) {
+    return;
+  }
+
+  diff.x *= BULLET_VELOCITY / player_center.x * MOUSE_SCALE;
+  diff.y *= BULLET_VELOCITY / player_center.y * MOUSE_SCALE;
+
+  // Constrain distance
+  if (diff.x > BULLET_VELOCITY)
+    diff.x = BULLET_VELOCITY;
+  if (diff.y > BULLET_VELOCITY)
+    diff.y = BULLET_VELOCITY;
+
+  for (size_t i = 1; i <= N_DOTS; i++) {
+    body_t *dot =
+        make_visual_dots(body_get_centroid(state->player), DOT_RADIUS);
+    body_set_velocity(dot, diff);
+    body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
+    body_tick(dot, DOTS_SEP_DT * i);
+    sdl_draw_body(dot);
+    /* printf("centroid %zu: %f, mouse x = %f, mouse y = %f, diff x = %f, y =
+     * %f\n", i, body_get_centroid(dot).x, mouse.x, mouse.y, diff.x, diff.y); */
+  }
+}
+
 bool emscripten_main(state_t *current_state) {
   double dt = time_since_last_tick();
 
@@ -978,6 +1085,9 @@ bool emscripten_main(state_t *current_state) {
 
   // update music
   check_and_update_music(current_state);
+
+  // update visualization
+  /* track_cursor(current_state); */
 
   if (current_state->current_status != GAME_OVER_WATER &&
       current_state->current_status != GAME_WON_PLAYERS_WON &&
@@ -1080,11 +1190,18 @@ bool emscripten_main(state_t *current_state) {
 
   update_and_draw_hp_bars(current_state);
 
+<<<<<<< demo/game.c
+  // Visualization
+  const bool easy = true;
+  if (easy && current_state->current_status == WAITING_FOR_PLAYER_SHOT &&
+      current_state->mouse_down)
+    update_and_draw_visualization(current_state);
+
   // Display messages
   if ((current_state->current_status == GAME_WON_PLAYERS_WON ||
        current_state->current_status == GAME_OVER_ENEMIES_WON ||
        current_state->current_status == GAME_OVER_WATER) &&
-      !current_state->game_over_message_printed) {
+       !current_state->game_over_message_printed) {
     if (current_state->current_status == GAME_WON_PLAYERS_WON) {
       printf("VICTORY - Players Won!\n");
     } else if (current_state->current_status == GAME_OVER_ENEMIES_WON) {
