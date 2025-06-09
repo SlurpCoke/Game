@@ -99,7 +99,12 @@ typedef enum {
   TYPE_HP_BAR
 } body_type_t;
 
-typedef enum { TURN_PLAYER1, TURN_PLAYER2, TURN_ENEMY1, TURN_ENEMY2 } turn_order_t;
+typedef enum {
+  TURN_PLAYER1,
+  TURN_PLAYER2,
+  TURN_ENEMY1,
+  TURN_ENEMY2
+} turn_order_t;
 
 typedef struct {
   body_type_t type;
@@ -227,25 +232,29 @@ bool is_any_character_low_hp(state_t *state) {
 
   // Check if any alive character has low HP
   if (player1_alive) {
-    character_info_t *player1_info = (character_info_t *)body_get_info(state->player1);
+    character_info_t *player1_info =
+        (character_info_t *)body_get_info(state->player1);
     if (player1_info && player1_info->current_hp <= LOW_HP_THRESHOLD) {
       return true;
     }
   }
   if (player2_alive) {
-    character_info_t *player2_info = (character_info_t *)body_get_info(state->player2);
+    character_info_t *player2_info =
+        (character_info_t *)body_get_info(state->player2);
     if (player2_info && player2_info->current_hp <= LOW_HP_THRESHOLD) {
       return true;
     }
   }
   if (enemy1_alive) {
-    character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
+    character_info_t *enemy1_info =
+        (character_info_t *)body_get_info(state->enemy1);
     if (enemy1_info && enemy1_info->current_hp <= LOW_HP_THRESHOLD) {
       return true;
     }
   }
   if (enemy2_alive) {
-    character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
+    character_info_t *enemy2_info =
+        (character_info_t *)body_get_info(state->enemy2);
     if (enemy2_info && enemy2_info->current_hp <= LOW_HP_THRESHOLD) {
       return true;
     }
@@ -277,7 +286,8 @@ bool is_character_alive(body_t *character) {
   }
 
   character_info_t *info = (character_info_t *)body_get_info(character);
-  if (!info || info->current_hp <= 0 || info->died_from_water || info->is_dead) {
+  if (!info || info->current_hp <= 0 || info->died_from_water ||
+      info->is_dead) {
     return false;
   }
 
@@ -288,7 +298,7 @@ bool is_character_alive(body_t *character) {
 void check_game_over(state_t *state) {
   if (state->current_status == GAME_OVER_WATER ||
       state->current_status == GAME_WON_PLAYERS_WON ||
-      state->current_status == GAME_OVER_ENEMIES_WON){
+      state->current_status == GAME_OVER_ENEMIES_WON) {
     return;
   }
 
@@ -301,13 +311,13 @@ void check_game_over(state_t *state) {
   bool enemies_alive = enemy1_alive || enemy2_alive;
 
   // Check win conditions
-  if (!players_alive && enemies_alive){
+  if (!players_alive && enemies_alive) {
     state->current_status = GAME_OVER_ENEMIES_WON;
     state->game_over_message_printed = false;
-  } else if (players_alive && !enemies_alive){
+  } else if (players_alive && !enemies_alive) {
     state->current_status = GAME_WON_PLAYERS_WON;
     state->game_over_message_printed = false;
-  } else if (!players_alive && !enemies_alive){
+  } else if (!players_alive && !enemies_alive) {
     // Everyone is dead (shouldnt happen)
     state->current_status = GAME_OVER_WATER;
     state->game_over_message_printed = false;
@@ -317,37 +327,41 @@ void check_game_over(state_t *state) {
   if (state->current_status == GAME_WON_PLAYERS_WON ||
       state->current_status == GAME_OVER_ENEMIES_WON ||
       state->current_status == GAME_OVER_WATER) {
-    
+
     if (player1_alive) {
       body_set_velocity(state->player1, VEC_ZERO);
-      character_info_t *player1_info = (character_info_t *)body_get_info(state->player1);
+      character_info_t *player1_info =
+          (character_info_t *)body_get_info(state->player1);
       if (player1_info) {
         player1_info->affected_by_gravity = false;
         player1_info->is_knocked_back = false;
       }
     }
-    
+
     if (player2_alive) {
       body_set_velocity(state->player2, VEC_ZERO);
-      character_info_t *player2_info = (character_info_t *)body_get_info(state->player2);
+      character_info_t *player2_info =
+          (character_info_t *)body_get_info(state->player2);
       if (player2_info) {
         player2_info->affected_by_gravity = false;
         player2_info->is_knocked_back = false;
       }
     }
-    
+
     if (enemy1_alive) {
       body_set_velocity(state->enemy1, VEC_ZERO);
-      character_info_t *enemy1_info = (character_info_t *)body_get_info(state->enemy1);
+      character_info_t *enemy1_info =
+          (character_info_t *)body_get_info(state->enemy1);
       if (enemy1_info) {
         enemy1_info->affected_by_gravity = false;
         enemy1_info->is_knocked_back = false;
       }
     }
-    
+
     if (enemy2_alive) {
       body_set_velocity(state->enemy2, VEC_ZERO);
-      character_info_t *enemy2_info = (character_info_t *)body_get_info(state->enemy2);
+      character_info_t *enemy2_info =
+          (character_info_t *)body_get_info(state->enemy2);
       if (enemy2_info) {
         enemy2_info->affected_by_gravity = false;
         enemy2_info->is_knocked_back = false;
@@ -367,28 +381,44 @@ turn_order_t get_next_turn(turn_order_t last_turn, body_t *player1,
   // cycle through turns, skipping dead characters
   switch (last_turn) {
   case TURN_PLAYER1:
-    if (player2_alive) return TURN_PLAYER2;
-    else if (enemy1_alive) return TURN_ENEMY1;
-    else if (enemy2_alive) return TURN_ENEMY2;
-    else if (player1_alive) return TURN_PLAYER1;
+    if (player2_alive)
+      return TURN_PLAYER2;
+    else if (enemy1_alive)
+      return TURN_ENEMY1;
+    else if (enemy2_alive)
+      return TURN_ENEMY2;
+    else if (player1_alive)
+      return TURN_PLAYER1;
     break;
   case TURN_PLAYER2:
-    if (enemy1_alive) return TURN_ENEMY1;
-    else if (enemy2_alive) return TURN_ENEMY2;
-    else if (player1_alive) return TURN_PLAYER1;
-    else if (player2_alive) return TURN_PLAYER2;
+    if (enemy1_alive)
+      return TURN_ENEMY1;
+    else if (enemy2_alive)
+      return TURN_ENEMY2;
+    else if (player1_alive)
+      return TURN_PLAYER1;
+    else if (player2_alive)
+      return TURN_PLAYER2;
     break;
   case TURN_ENEMY1:
-    if (enemy2_alive) return TURN_ENEMY2;
-    else if (player1_alive) return TURN_PLAYER1;
-    else if (player2_alive) return TURN_PLAYER2;
-    else if (enemy1_alive) return TURN_ENEMY1;
+    if (enemy2_alive)
+      return TURN_ENEMY2;
+    else if (player1_alive)
+      return TURN_PLAYER1;
+    else if (player2_alive)
+      return TURN_PLAYER2;
+    else if (enemy1_alive)
+      return TURN_ENEMY1;
     break;
   case TURN_ENEMY2:
-    if (player1_alive) return TURN_PLAYER1;
-    else if (player2_alive) return TURN_PLAYER2;
-    else if (enemy1_alive) return TURN_ENEMY1;
-    else if (enemy2_alive) return TURN_ENEMY2;
+    if (player1_alive)
+      return TURN_PLAYER1;
+    else if (player2_alive)
+      return TURN_PLAYER2;
+    else if (enemy1_alive)
+      return TURN_ENEMY1;
+    else if (enemy2_alive)
+      return TURN_ENEMY2;
     break;
   }
 
@@ -485,9 +515,10 @@ body_t *make_projectile_body(vector_t center, double width, double height,
 // Choose random target
 body_t *choose_ai_target(state_t *state, body_t *shooter) {
   character_info_t *shooter_info = (character_info_t *)body_get_info(shooter);
-  
+
   if (shooter_info->type == TYPE_ENEMY1 || shooter_info->type == TYPE_ENEMY2) {
-    if (is_character_alive(state->player1) && is_character_alive(state->player2)) {
+    if (is_character_alive(state->player1) &&
+        is_character_alive(state->player2)) {
       return (rand() % 2 == 0) ? state->player1 : state->player2;
     } else if (is_character_alive(state->player1)) {
       return state->player1;
@@ -495,7 +526,7 @@ body_t *choose_ai_target(state_t *state, body_t *shooter) {
       return state->player2;
     }
   }
-  
+
   return NULL;
 }
 
@@ -523,7 +554,8 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
                      bullet_hit_target_handler, current_state, 0.0, NULL);
     create_collision(current_state->scene, bullet, current_state->enemy2,
                      bullet_hit_target_handler, current_state, 0.0, NULL);
-  } else if (bullet_tag == TYPE_BULLET_ENEMY1 || bullet_tag == TYPE_BULLET_ENEMY2) {
+  } else if (bullet_tag == TYPE_BULLET_ENEMY1 ||
+             bullet_tag == TYPE_BULLET_ENEMY2) {
     // Enemies shoot
     create_collision(current_state->scene, bullet, current_state->player1,
                      bullet_hit_target_handler, current_state, 0.0, NULL);
@@ -535,11 +567,10 @@ body_t *fire_bullet(state_t *current_state, body_t *shooter,
 
 void on_key_press(char key, key_event_type_t type, double held_time,
                   state_t *current_state) {
-  if (type == KEY_PRESSED && 
-      current_state->current_status != GAME_OVER_WATER &&
+  if (type == KEY_PRESSED && current_state->current_status != GAME_OVER_WATER &&
       current_state->current_status != GAME_WON_PLAYERS_WON &&
       current_state->current_status != GAME_OVER_ENEMIES_WON) {
-    
+
     // Player 1 shoots (Space)
     if (key == SPACE_BAR &&
         current_state->current_status == WAITING_FOR_PLAYER1_SHOT &&
@@ -551,16 +582,16 @@ void on_key_press(char key, key_event_type_t type, double held_time,
       } else if (is_character_alive(current_state->enemy2)) {
         target = current_state->enemy2;
       }
-      
+
       if (target) {
         fire_bullet(current_state, current_state->player1, target,
                     TYPE_BULLET_PLAYER1);
         current_state->current_status = PLAYER1_SHOT_ACTIVE;
       }
     }
-    
+
     // Player 2 shoots (Enter)
-    else if (key == '\r' &&  
+    else if (key == '\r' &&
              current_state->current_status == WAITING_FOR_PLAYER2_SHOT &&
              current_state->current_turn == TURN_PLAYER2) {
       printf("Player 2 firing.\n");
@@ -570,7 +601,7 @@ void on_key_press(char key, key_event_type_t type, double held_time,
       } else if (is_character_alive(current_state->enemy2)) {
         target = current_state->enemy2;
       }
-      
+
       if (target) {
         fire_bullet(current_state, current_state->player2, target,
                     TYPE_BULLET_PLAYER2);
@@ -601,19 +632,24 @@ void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
   target_char_info->current_hp -= target_char_info->max_hp / 2.0;
   if (target_char_info->current_hp < 0)
     target_char_info->current_hp = 0;
-  
+
   const char *target_name = "";
-  if (target_char_info->type == TYPE_PLAYER1) target_name = "Player 1";
-  else if (target_char_info->type == TYPE_PLAYER2) target_name = "Player 2";
-  else if (target_char_info->type == TYPE_ENEMY1) target_name = "Enemy 1";
-  else if (target_char_info->type == TYPE_ENEMY2) target_name = "Enemy 2";
-  
-  printf("%s HP is now %.1f/%.1f\n", target_name,
-         target_char_info->current_hp, target_char_info->max_hp);
+  if (target_char_info->type == TYPE_PLAYER1)
+    target_name = "Player 1";
+  else if (target_char_info->type == TYPE_PLAYER2)
+    target_name = "Player 2";
+  else if (target_char_info->type == TYPE_ENEMY1)
+    target_name = "Enemy 1";
+  else if (target_char_info->type == TYPE_ENEMY2)
+    target_name = "Enemy 2";
+
+  printf("%s HP is now %.1f/%.1f\n", target_name, target_char_info->current_hp,
+         target_char_info->max_hp);
 
   // Mark character as dead & move off screen
   if (target_char_info->current_hp <= 0) {
-    printf("%s has been defeated and removed from the battlefield!\n", target_name);
+    printf("%s has been defeated and removed from the battlefield!\n",
+           target_name);
     target_char_info->is_dead = true;
     target_char_info->affected_by_gravity = false;
     target_char_info->is_knocked_back = false;
@@ -627,8 +663,9 @@ void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
     target_char_info->is_knocked_back = true;
     vector_t bullet_vel = body_get_velocity(bullet);
     double knock_dir_x = (bullet_vel.x > 0) ? 1.0 : -1.0;
-    body_set_velocity(target, (vector_t){knock_dir_x * KNOCKBACK_BASE_VELOCITY_X,
-                                         KNOCKBACK_BASE_VELOCITY_Y});
+    body_set_velocity(target,
+                      (vector_t){knock_dir_x * KNOCKBACK_BASE_VELOCITY_X,
+                                 KNOCKBACK_BASE_VELOCITY_Y});
   }
 
   check_game_over(current_state);
@@ -637,10 +674,9 @@ void bullet_hit_target_handler(body_t *bullet, body_t *target, vector_t axis,
   if (current_state->current_status != GAME_WON_PLAYERS_WON &&
       current_state->current_status != GAME_OVER_ENEMIES_WON &&
       current_state->current_status != GAME_OVER_WATER) {
-    current_state->next_turn_after_delay =
-        get_next_turn(current_state->current_turn, current_state->player1,
-                      current_state->player2, current_state->enemy1,
-                      current_state->enemy2);
+    current_state->next_turn_after_delay = get_next_turn(
+        current_state->current_turn, current_state->player1,
+        current_state->player2, current_state->enemy1, current_state->enemy2);
 
     current_state->current_status = SHOT_DELAY;
     current_state->shot_delay_timer = SHOT_DELAY_TIME;
@@ -663,13 +699,17 @@ void character_hit_water_handler(body_t *character, body_t *water,
   if (fabs(current_color.red - WATER_DEATH_COLOR.red) > 0.01 ||
       fabs(current_color.green - WATER_DEATH_COLOR.green) > 0.01 ||
       fabs(current_color.blue - WATER_DEATH_COLOR.blue) > 0.01) {
-    
+
     const char *char_name = "";
-    if (char_info->type == TYPE_PLAYER1) char_name = "Player 1";
-    else if (char_info->type == TYPE_PLAYER2) char_name = "Player 2";
-    else if (char_info->type == TYPE_ENEMY1) char_name = "Enemy 1";
-    else if (char_info->type == TYPE_ENEMY2) char_name = "Enemy 2";
-    
+    if (char_info->type == TYPE_PLAYER1)
+      char_name = "Player 1";
+    else if (char_info->type == TYPE_PLAYER2)
+      char_name = "Player 2";
+    else if (char_info->type == TYPE_ENEMY1)
+      char_name = "Enemy 1";
+    else if (char_info->type == TYPE_ENEMY2)
+      char_name = "Enemy 2";
+
     printf("%s touched water.\n", char_name);
     body_set_color(character, WATER_DEATH_COLOR);
     body_set_velocity(character, VEC_ZERO);
@@ -678,7 +718,7 @@ void character_hit_water_handler(body_t *character, body_t *water,
     char_info->affected_by_gravity = false;
     char_info->is_knocked_back = false;
     body_set_centroid(character, (vector_t){-1000, -1000});
-    
+
     check_game_over(current_state);
   }
 }
@@ -728,11 +768,15 @@ void character_platform_contact_handler(body_t *character, body_t *platform,
   if (axis.y > 0.7 && char_bottom <= platform_top + 2.0) {
     if (char_info->is_knocked_back) {
       const char *char_name = "";
-      if (char_info->type == TYPE_PLAYER1) char_name = "Player 1";
-      else if (char_info->type == TYPE_PLAYER2) char_name = "Player 2";
-      else if (char_info->type == TYPE_ENEMY1) char_name = "Enemy 1";
-      else if (char_info->type == TYPE_ENEMY2) char_name = "Enemy 2";
-      
+      if (char_info->type == TYPE_PLAYER1)
+        char_name = "Player 1";
+      else if (char_info->type == TYPE_PLAYER2)
+        char_name = "Player 2";
+      else if (char_info->type == TYPE_ENEMY1)
+        char_name = "Enemy 1";
+      else if (char_info->type == TYPE_ENEMY2)
+        char_name = "Enemy 2";
+
       printf("%s landed on platform.\n", char_name);
       body_set_velocity(character, VEC_ZERO);
       char_info->is_knocked_back = false;
@@ -846,35 +890,39 @@ state_t *emscripten_init() {
 
 void update_and_draw_hp_bars(state_t *state) {
   // Player 1 HP Bar
-  if (is_character_alive(state->player1)){
+  if (is_character_alive(state->player1)) {
     vector_t p1_pos = body_get_centroid(state->player1);
     vector_t p1_hp_bg_pos = vec_add(p1_pos, (vector_t){0, HP_BAR_Y_OFFSET});
-    character_info_t *p1_info = (character_info_t *)body_get_info(state->player1);
-    if (p1_info && p1_info->current_hp > 0){
+    character_info_t *p1_info =
+        (character_info_t *)body_get_info(state->player1);
+    if (p1_info && p1_info->current_hp > 0) {
       sdl_draw_body(make_generic_rectangle_body(p1_hp_bg_pos, HP_BAR_WIDTH,
                                                 HP_BAR_HEIGHT, HP_BAR_BG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
       double p1_hp_percent = p1_info->current_hp / p1_info->max_hp;
       double p1_fg_width = HP_BAR_WIDTH * p1_hp_percent;
-      vector_t p1_hp_fg_pos = vec_add(p1_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - p1_fg_width) / 2.0, 0});
+      vector_t p1_hp_fg_pos = vec_add(
+          p1_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - p1_fg_width) / 2.0, 0});
       sdl_draw_body(make_generic_rectangle_body(p1_hp_fg_pos, p1_fg_width,
                                                 HP_BAR_HEIGHT, HP_BAR_FG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
     }
   }
-  
+
   // Player 2 HP Bar
-  if (is_character_alive(state->player2)){
+  if (is_character_alive(state->player2)) {
     vector_t p2_pos = body_get_centroid(state->player2);
     vector_t p2_hp_bg_pos = vec_add(p2_pos, (vector_t){0, HP_BAR_Y_OFFSET});
-    character_info_t *p2_info = (character_info_t *)body_get_info(state->player2);
-    if (p2_info && p2_info->current_hp > 0){
+    character_info_t *p2_info =
+        (character_info_t *)body_get_info(state->player2);
+    if (p2_info && p2_info->current_hp > 0) {
       sdl_draw_body(make_generic_rectangle_body(p2_hp_bg_pos, HP_BAR_WIDTH,
                                                 HP_BAR_HEIGHT, HP_BAR_BG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
       double p2_hp_percent = p2_info->current_hp / p2_info->max_hp;
       double p2_fg_width = HP_BAR_WIDTH * p2_hp_percent;
-      vector_t p2_hp_fg_pos = vec_add(p2_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - p2_fg_width) / 2.0, 0});
+      vector_t p2_hp_fg_pos = vec_add(
+          p2_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - p2_fg_width) / 2.0, 0});
       sdl_draw_body(make_generic_rectangle_body(p2_hp_fg_pos, p2_fg_width,
                                                 HP_BAR_HEIGHT, HP_BAR_FG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
@@ -882,17 +930,19 @@ void update_and_draw_hp_bars(state_t *state) {
   }
 
   // Enemy 1 HP Bar
-  if (is_character_alive(state->enemy1)){
+  if (is_character_alive(state->enemy1)) {
     vector_t e1_pos = body_get_centroid(state->enemy1);
     vector_t e1_hp_bg_pos = vec_add(e1_pos, (vector_t){0, HP_BAR_Y_OFFSET});
-    character_info_t *e1_info = (character_info_t *)body_get_info(state->enemy1);
-    if (e1_info && e1_info->current_hp > 0){
+    character_info_t *e1_info =
+        (character_info_t *)body_get_info(state->enemy1);
+    if (e1_info && e1_info->current_hp > 0) {
       sdl_draw_body(make_generic_rectangle_body(e1_hp_bg_pos, HP_BAR_WIDTH,
                                                 HP_BAR_HEIGHT, HP_BAR_BG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
       double e1_hp_percent = e1_info->current_hp / e1_info->max_hp;
       double e1_fg_width = HP_BAR_WIDTH * e1_hp_percent;
-      vector_t e1_hp_fg_pos = vec_add(e1_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - e1_fg_width) / 2.0, 0});
+      vector_t e1_hp_fg_pos = vec_add(
+          e1_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - e1_fg_width) / 2.0, 0});
       sdl_draw_body(make_generic_rectangle_body(e1_hp_fg_pos, e1_fg_width,
                                                 HP_BAR_HEIGHT, HP_BAR_FG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
@@ -900,17 +950,19 @@ void update_and_draw_hp_bars(state_t *state) {
   }
 
   // Enemy 2 HP Bar
-  if (is_character_alive(state->enemy2)){
+  if (is_character_alive(state->enemy2)) {
     vector_t e2_pos = body_get_centroid(state->enemy2);
     vector_t e2_hp_bg_pos = vec_add(e2_pos, (vector_t){0, HP_BAR_Y_OFFSET});
-    character_info_t *e2_info = (character_info_t *)body_get_info(state->enemy2);
-    if (e2_info && e2_info->current_hp > 0){
+    character_info_t *e2_info =
+        (character_info_t *)body_get_info(state->enemy2);
+    if (e2_info && e2_info->current_hp > 0) {
       sdl_draw_body(make_generic_rectangle_body(e2_hp_bg_pos, HP_BAR_WIDTH,
                                                 HP_BAR_HEIGHT, HP_BAR_BG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
       double e2_hp_percent = e2_info->current_hp / e2_info->max_hp;
       double e2_fg_width = HP_BAR_WIDTH * e2_hp_percent;
-      vector_t e2_hp_fg_pos = vec_add(e2_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - e2_fg_width) / 2.0, 0});
+      vector_t e2_hp_fg_pos = vec_add(
+          e2_hp_bg_pos, (vector_t){-(HP_BAR_WIDTH - e2_fg_width) / 2.0, 0});
       sdl_draw_body(make_generic_rectangle_body(e2_hp_fg_pos, e2_fg_width,
                                                 HP_BAR_HEIGHT, HP_BAR_FG_COLOR,
                                                 TYPE_HP_BAR, INFINITY));
@@ -930,7 +982,7 @@ bool emscripten_main(state_t *current_state) {
   if (current_state->current_status != GAME_OVER_WATER &&
       current_state->current_status != GAME_WON_PLAYERS_WON &&
       current_state->current_status != GAME_OVER_ENEMIES_WON) {
-    
+
     // Delay between shots
     if (current_state->current_status == SHOT_DELAY) {
       current_state->shot_delay_timer -= dt;
@@ -957,46 +1009,44 @@ bool emscripten_main(state_t *current_state) {
     // Enemy turns
     if (current_state->current_turn == TURN_ENEMY1 &&
         current_state->current_status == ENEMY1_FIRING) {
-      if (is_character_alive(current_state->enemy1)){
+      if (is_character_alive(current_state->enemy1)) {
         printf("Enemy 1 firing.\n");
         body_t *target = choose_ai_target(current_state, current_state->enemy1);
-        if (target){
+        if (target) {
           fire_bullet(current_state, current_state->enemy1, target,
                       TYPE_BULLET_ENEMY1);
           current_state->current_status = ENEMY1_SHOT_ACTIVE;
         }
       } else {
         // Enemy 1 is dead
-        current_state->current_turn = get_next_turn(current_state->current_turn, 
-                                                   current_state->player1,
-                                                   current_state->player2, 
-                                                   current_state->enemy1, 
-                                                   current_state->enemy2);
-        if (current_state->current_turn == TURN_PLAYER1){
+        current_state->current_turn =
+            get_next_turn(current_state->current_turn, current_state->player1,
+                          current_state->player2, current_state->enemy1,
+                          current_state->enemy2);
+        if (current_state->current_turn == TURN_PLAYER1) {
           current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
-        } else if (current_state->current_turn == TURN_PLAYER2){
+        } else if (current_state->current_turn == TURN_PLAYER2) {
           current_state->current_status = WAITING_FOR_PLAYER2_SHOT;
-        } else if (current_state->current_turn == TURN_ENEMY2){
+        } else if (current_state->current_turn == TURN_ENEMY2) {
           current_state->current_status = ENEMY2_FIRING;
         }
       }
     } else if (current_state->current_turn == TURN_ENEMY2 &&
-               current_state->current_status == ENEMY2_FIRING){
-      if (is_character_alive(current_state->enemy2)){
+               current_state->current_status == ENEMY2_FIRING) {
+      if (is_character_alive(current_state->enemy2)) {
         printf("Enemy 2 firing.\n");
         body_t *target = choose_ai_target(current_state, current_state->enemy2);
-        if (target){
+        if (target) {
           fire_bullet(current_state, current_state->enemy2, target,
                       TYPE_BULLET_ENEMY2);
           current_state->current_status = ENEMY2_SHOT_ACTIVE;
         }
       } else {
         // Enemy 2 is dead
-        current_state->current_turn = get_next_turn(current_state->current_turn, 
-                                                   current_state->player1,
-                                                   current_state->player2, 
-                                                   current_state->enemy1, 
-                                                   current_state->enemy2);
+        current_state->current_turn =
+            get_next_turn(current_state->current_turn, current_state->player1,
+                          current_state->player2, current_state->enemy1,
+                          current_state->enemy2);
         if (current_state->current_turn == TURN_PLAYER1) {
           current_state->current_status = WAITING_FOR_PLAYER1_SHOT;
         } else if (current_state->current_turn == TURN_PLAYER2) {
@@ -1020,7 +1070,7 @@ bool emscripten_main(state_t *current_state) {
       body_type_t *info = body_get_info(body_to_draw);
       if (!info || *info != TYPE_HP_BAR) {
         if (info && (*info == TYPE_PLAYER1 || *info == TYPE_PLAYER2 ||
-                     *info == TYPE_ENEMY1 || *info == TYPE_ENEMY2)){
+                     *info == TYPE_ENEMY1 || *info == TYPE_ENEMY2)) {
           continue;
         }
         sdl_draw_body(body_to_draw);
@@ -1049,17 +1099,16 @@ bool emscripten_main(state_t *current_state) {
   static bool last_turn_printed = false;
   static turn_order_t last_printed_turn = TURN_PLAYER1;
   static game_status_t last_printed_status = WAITING_FOR_PLAYER1_SHOT;
-  
-  if (!last_turn_printed || 
-      last_printed_turn != current_state->current_turn ||
-      last_printed_status != current_state->current_status){
-    
-    if (current_state->current_status == WAITING_FOR_PLAYER1_SHOT){
+
+  if (!last_turn_printed || last_printed_turn != current_state->current_turn ||
+      last_printed_status != current_state->current_status) {
+
+    if (current_state->current_status == WAITING_FOR_PLAYER1_SHOT) {
       printf("Player 1's turn! Press SPACE to shoot.\n");
-    } else if (current_state->current_status == WAITING_FOR_PLAYER2_SHOT){
+    } else if (current_state->current_status == WAITING_FOR_PLAYER2_SHOT) {
       printf("Player 2's turn! Press ENTER to shoot.\n");
     }
-    
+
     last_turn_printed = true;
     last_printed_turn = current_state->current_turn;
     last_printed_status = current_state->current_status;
