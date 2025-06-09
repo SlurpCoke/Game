@@ -29,7 +29,7 @@ typedef enum {
  * #define KEY_RELEASED 1
  */
 typedef enum { KEY_PRESSED, KEY_RELEASED } key_event_type_t;
-typedef enum { MOUSE_DOWN, MOUSE_UP, MOUSE_MOVE} mouse_event_type_t;
+typedef enum { MOUSE_DOWN, MOUSE_UP, MOUSE_MOVE } mouse_event_type_t;
 
 /**
  * A keypress handler.
@@ -44,7 +44,8 @@ typedef enum { MOUSE_DOWN, MOUSE_UP, MOUSE_MOVE} mouse_event_type_t;
 typedef void (*key_handler_t)(char key, key_event_type_t type, double held_time,
                               void *state);
 
-typedef void (*mouse_handler_t)(mouse_event_type_t type, int x, int y, void *state);
+typedef void (*mouse_handler_t)(mouse_event_type_t type, int x, int y,
+                                void *state);
 
 /**
  * Initializes the SDL window and renderer.

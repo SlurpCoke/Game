@@ -679,29 +679,29 @@ void character_platform_contact_handler(body_t *character, body_t *platform,
 }
 
 void mouse_handler(mouse_event_type_t type, int x, int y, state_t *state) {
-        switch (type) {
-            case MOUSE_DOWN: {
-                state->mouse_down = true;
-                state->mouse_x = 0;
-                state->mouse_y = 0;
-                printf("Mouse down!\n");
-                break;
-                                      }
-            case MOUSE_MOVE: {
-                if (state->mouse_down) { 
-                    state->mouse_x = x;
-                    state->mouse_y = y;
-                }
-                break;
-              }
-            case MOUSE_UP: {
-                state->mouse_down = false;
-                printf("Mouse up!\n");
-                break;
-                                    }
-            default:
-                break;
-        }
+  switch (type) {
+  case MOUSE_DOWN: {
+    state->mouse_down = true;
+    state->mouse_x = 0;
+    state->mouse_y = 0;
+    printf("Mouse down!\n");
+    break;
+  }
+  case MOUSE_MOVE: {
+    if (state->mouse_down) {
+      state->mouse_x = x;
+      state->mouse_y = y;
+    }
+    break;
+  }
+  case MOUSE_UP: {
+    state->mouse_down = false;
+    printf("Mouse up!\n");
+    break;
+  }
+  default:
+    break;
+  }
 }
 
 state_t *emscripten_init() {
@@ -779,7 +779,6 @@ state_t *emscripten_init() {
                           current_state->all_characters,
                           current_state->all_characters, NULL);
 
-
   current_state->mouse_down = false;
   current_state->mouse_x = 0;
   current_state->mouse_y = 0;
@@ -842,30 +841,35 @@ void update_and_draw_hp_bars(state_t *state) {
 }
 
 void update_and_draw_visualization(state_t *state) {
-    // unit vector for aiming direction
-    const vector_t mouse = (vector_t){(double)state->mouse_x, MAX_SCREEN_COORDS.y - (double)state->mouse_y};
-    vector_t player_center = body_get_centroid(state->player);
-    vector_t diff = vec_subtract(player_center, mouse);
+  // unit vector for aiming direction
+  const vector_t mouse = (vector_t){
+      (double)state->mouse_x, MAX_SCREEN_COORDS.y - (double)state->mouse_y};
+  vector_t player_center = body_get_centroid(state->player);
+  vector_t diff = vec_subtract(player_center, mouse);
 
-    if (diff.x < 0 || diff.y < 0) { return; }
-    
-    diff.x *= BULLET_VELOCITY / player_center.x * MOUSE_SCALE;
-    diff.y *= BULLET_VELOCITY / player_center.y * MOUSE_SCALE;
+  if (diff.x < 0 || diff.y < 0) {
+    return;
+  }
 
-    // Constrain distance
-    if (diff.x > BULLET_VELOCITY)
-        diff.x = BULLET_VELOCITY;
-    if (diff.y > BULLET_VELOCITY)
-        diff.y = BULLET_VELOCITY;
+  diff.x *= BULLET_VELOCITY / player_center.x * MOUSE_SCALE;
+  diff.y *= BULLET_VELOCITY / player_center.y * MOUSE_SCALE;
 
-    for (size_t i = 1; i <= N_DOTS; i++) {
-        body_t *dot = make_visual_dots(body_get_centroid(state->player), DOT_RADIUS);
-        body_set_velocity(dot, diff);
-        body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
-        body_tick(dot, DOTS_SEP_DT * i);
-        sdl_draw_body(dot);
-        /* printf("centroid %zu: %f, mouse x = %f, mouse y = %f, diff x = %f, y = %f\n", i, body_get_centroid(dot).x, mouse.x, mouse.y, diff.x, diff.y); */
-    }
+  // Constrain distance
+  if (diff.x > BULLET_VELOCITY)
+    diff.x = BULLET_VELOCITY;
+  if (diff.y > BULLET_VELOCITY)
+    diff.y = BULLET_VELOCITY;
+
+  for (size_t i = 1; i <= N_DOTS; i++) {
+    body_t *dot =
+        make_visual_dots(body_get_centroid(state->player), DOT_RADIUS);
+    body_set_velocity(dot, diff);
+    body_add_force(dot, (vector_t){0, -GRAVITY_ACCELERATION * BULLET_WEIGHT});
+    body_tick(dot, DOTS_SEP_DT * i);
+    sdl_draw_body(dot);
+    /* printf("centroid %zu: %f, mouse x = %f, mouse y = %f, diff x = %f, y =
+     * %f\n", i, body_get_centroid(dot).x, mouse.x, mouse.y, diff.x, diff.y); */
+  }
 }
 
 bool emscripten_main(state_t *current_state) {
@@ -944,8 +948,9 @@ bool emscripten_main(state_t *current_state) {
 
   // Visualization
   const bool easy = true;
-  if (easy && current_state->current_status == WAITING_FOR_PLAYER_SHOT && current_state->mouse_down) 
-      update_and_draw_visualization(current_state);
+  if (easy && current_state->current_status == WAITING_FOR_PLAYER_SHOT &&
+      current_state->mouse_down)
+    update_and_draw_visualization(current_state);
 
   // Display game over message
   if ((current_state->current_status == GAME_OVER_PLAYER_DEAD ||

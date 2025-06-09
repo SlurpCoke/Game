@@ -36,7 +36,8 @@ SDL_Renderer *renderer;
  * The keypress handler, or NULL if none has been configured.
  */
 key_handler_t key_handler = NULL;
-mouse_handler_t mouse_handler_fn = NULL; // appended _fn to avoid duplicate symbols
+mouse_handler_t mouse_handler_fn =
+    NULL; // appended _fn to avoid duplicate symbols
 
 /**
  * SDL's timestamp when a key was last pressed or released.
@@ -124,51 +125,57 @@ void sdl_init(vector_t min, vector_t max) {
 }
 
 bool sdl_is_done(state_t *state) {
-    SDL_Event *event = malloc(sizeof(*event));
-    assert(event != NULL);
-    while (SDL_PollEvent(event)) {
-        switch (event->type) {
-            case SDL_QUIT:
-                free(event);
-                return true;
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
-                // Skip the keypress if no handler is configured
-                // or an unrecognized key was pressed
-                if (key_handler == NULL)
-                    break;
-                char key = get_keycode(event->key.keysym.sym);
-                if (key == '\0')
-                    break;
+  SDL_Event *event = malloc(sizeof(*event));
+  assert(event != NULL);
+  while (SDL_PollEvent(event)) {
+    switch (event->type) {
+    case SDL_QUIT:
+      free(event);
+      return true;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      // Skip the keypress if no handler is configured
+      // or an unrecognized key was pressed
+      if (key_handler == NULL)
+        break;
+      char key = get_keycode(event->key.keysym.sym);
+      if (key == '\0')
+        break;
 
-                uint32_t timestamp = event->key.timestamp;
-                if (!event->key.repeat) {
-                    key_start_timestamp = timestamp;
-                }
-                key_event_type_t type =
-                    event->type == SDL_KEYDOWN ? KEY_PRESSED : KEY_RELEASED;
-                double held_time = (timestamp - key_start_timestamp) / MS_PER_S;
-                key_handler(key, type, held_time, state);
-                break;
-            case SDL_MOUSEBUTTONDOWN: {
-                                          if (mouse_handler_fn == NULL) { break; }
-                                          mouse_handler_fn(MOUSE_DOWN, 0, 0, state);
-                                          break;
-                                      }
-            case SDL_MOUSEMOTION: {
-                                          if (mouse_handler_fn == NULL) { break; }
-                                      mouse_handler_fn(MOUSE_MOVE, event->motion.x, event->motion.y, state);
-                                      break;
-                                  }
-            case SDL_MOUSEBUTTONUP: {
-                                          if (mouse_handler_fn == NULL) { break; }
-                                          mouse_handler_fn(MOUSE_UP, 0, 0, state);
-                                          break;
-                                    }
-        }
+      uint32_t timestamp = event->key.timestamp;
+      if (!event->key.repeat) {
+        key_start_timestamp = timestamp;
+      }
+      key_event_type_t type =
+          event->type == SDL_KEYDOWN ? KEY_PRESSED : KEY_RELEASED;
+      double held_time = (timestamp - key_start_timestamp) / MS_PER_S;
+      key_handler(key, type, held_time, state);
+      break;
+    case SDL_MOUSEBUTTONDOWN: {
+      if (mouse_handler_fn == NULL) {
+        break;
+      }
+      mouse_handler_fn(MOUSE_DOWN, 0, 0, state);
+      break;
     }
-    free(event);
-    return false;
+    case SDL_MOUSEMOTION: {
+      if (mouse_handler_fn == NULL) {
+        break;
+      }
+      mouse_handler_fn(MOUSE_MOVE, event->motion.x, event->motion.y, state);
+      break;
+    }
+    case SDL_MOUSEBUTTONUP: {
+      if (mouse_handler_fn == NULL) {
+        break;
+      }
+      mouse_handler_fn(MOUSE_UP, 0, 0, state);
+      break;
+    }
+    }
+  }
+  free(event);
+  return false;
 }
 
 void sdl_clear(void) {
