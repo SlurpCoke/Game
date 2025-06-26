@@ -1,9 +1,5 @@
 # **Summary**
 
-**Group members:** Alex Chung, Derek Days, Phoom Punpeng
-
-*Refer to [Features](#features) for member roles*
-
 **Game Name: King of the Pirates**
 
 **Game Concept:**  As a rising pirate, you and your crew are constantly being challenged by other pirates who also want to become the king. Defend yourselves and attack the pirates and try to knock them out of their boats to become the king of the pirates\!
@@ -62,52 +58,3 @@ So the controls would be only through mouse cursors. From start to end for the p
 - Music (changes when player 1, player 2 or enemy has low HP)  
 - Backgrounds (dimmed when player about to die, changes depending on difficulty level)
 
-# **Timeline**
-
-Alex
-
-| (Priority) Feature | Week |  |  |
-| ----- | ----- | ----- | ----- |
-|  | 1 | 2 | 3 |
-| (1) Local multiplayer (switching turns based on which player went last) | X |  |  |
-| (2) Enemy AI (can be random) Depending on difficulty, enemy AI have  |  | X |  |
-| (2) Graphic Design (our own SVGs for player/enemy characters) |  |  | X |
-| (3) Difficulty Selector (invisible cursor) |  | X |  |
-| (4) Music (changes when player 1, player 2 or enemy has low HP) |  |  | X |
-
-Derek
-
-| (Priority) Feature | Week |  |  |
-| ----- | ----- | ----- | ----- |
-|  | 1 | 2 | 3 |
-| (1) Collisions between bullet-character | X |  |  |
-| (1) Collisions between water-character | X |  |  |
-| (2) Enemy knockback |  | X |  |
-| (3) Projectiles |  |  | X |
-| (4) Sound FX |  |  | X |
-
-Phoom
-
-| (Priority) Feature | Week |  |  |
-| ----- | ----- | ----- | ----- |
-|  | 1 | 2 | 3 |
-| (1) Cursor tracking | X |  |  |
-| (2) Aiming system visualization | X | X |  |
-| (3) Random level generation |  | X | X |
-| (4) Dynamic backgrounds |  |  | X |
-
-# 
-
-# **Disaster Recovery**
-
-## **As a group**
-
-We will all hold each other accountable to finish what we have to by the deadline. However if someone falls behind, we will discuss and see how far behind the individual is and see if they need help implementing or debugging. In order for us to collaborate, we will be using Git to make sure that features can be developed in a parallel way. We will host a weekly check-in meeting where we will briefly go over what has been completed, what is going to be completed in the next week, and bugs/problems that remain unsolved from past weeks. We will also be conducting code reviews, where we explain our code to each other, so that mistakes are caught in a timely manner and each group member does not have to re-read the entire codebase). In case of major issues, we will prioritize core functionalities (priorities 1 and 2\) and adapt the goals as necessary.
-
-## **Individually**
-
-**Alex Chung**: I will try to complete all of the code 36 hours prior to the deadline, during that time, I will attend office hours to get help debugging and implementing. However, if I still have not finished my part by the day of the deadline, I will seek out my group’s help. 
-
-**Derek Days**: I will try to have all code done 24 hours before the deadline. If I haven’t finished, I will ask my group members for help.
-
-**Phoom Punpeng:** I will stick to the proposed timeline for each feature to ensure that prioritized features are completed in a timely manner. I will complete all code at least 24 hours prior to the deadline, and I will seek help from my group members if I am falling behind. I will also be communicating with my group members regarding the high-level implementation details of each feature to make sure that the final product is efficient.
